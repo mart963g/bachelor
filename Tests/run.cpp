@@ -1,4 +1,4 @@
-#include "LZ77/LZ77.h"
+#include "LZ77.h"
 
 int main () {
     LZ77 comp;
