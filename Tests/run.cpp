@@ -2,7 +2,7 @@
 
 int main () {
     LZ77 comp;
-    comp.testFunction();
+    comp.openFile("Tests/Hello.txt");
 
     return 0;
 }
