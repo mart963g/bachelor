@@ -14,8 +14,8 @@ run: Tests/run.cpp LZ77/LZ77.o LZ77/LZ77.cpp
 
 runTests:
 	@echo "Running tests...\n"
-	@./Tests/run
+	@./$(EXECS)
 
 clean:
 	@echo "Cleaning..."
-	@rm -f *.o */*.o $(EXECS)
+	@rm -f *.o */*.o */*.lzip $(EXECS)
