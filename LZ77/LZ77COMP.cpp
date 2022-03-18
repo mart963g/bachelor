@@ -2,14 +2,22 @@
 
 using namespace std;
 
-void LZ77::compressFile(string file_name) {
+void LZ77COMP::compressFile(string file_name) {
     this->initialiseCompression(file_name);
     this->compressAfterInitialisation();
     this->input_file.close();
     this->output_file.close();
 }
 
-void LZ77::initialiseCompression(string file_name) {
+void LZ77COMP::compressFile(string file_name, string destination_file) {
+    this->initialiseCompression(file_name, destination_file);
+    this->compressAfterInitialisation();
+    this->input_file.close();
+    this->output_file.close();
+
+}
+
+void LZ77COMP::initialiseCompression(string file_name) {
     // Open a name with filename.zip
     this->input_file.open(file_name, ios::binary);
     this->output_file.open(file_name + ".lzip", ios::app | ios::binary);
@@ -17,8 +25,16 @@ void LZ77::initialiseCompression(string file_name) {
     this->initialiseBuffers();
 }
 
+void LZ77COMP::initialiseCompression(string file_name, string destination_file) {
+    // Open a name with filename.zip
+    this->input_file.open(file_name, ios::binary);
+    this->output_file.open(destination_file + ".lzip", ios::app | ios::binary);
+
+    this->initialiseBuffers();
+}
+
 /* Has defaults history_size = 10, lookahead_size = 5 */
-void LZ77::initialiseBuffers(int history_size, int lookahead_size) {
+void LZ77COMP::initialiseBuffers(int history_size, int lookahead_size) {
     this->lookahead_buffer_end = lookahead_size;
     for(int i = this->lookahead_buffer_start; i < this->lookahead_buffer_end; i++){
         this->lookahead_buffer.push_back(this->input_file.get());
@@ -34,9 +50,12 @@ void LZ77::initialiseBuffers(int history_size, int lookahead_size) {
         int move = (token.offset == 0 ? 1 : (int) token.length);
         // cout << "Move: " << move << "\n";
 
-        // NEED AN EXTRA CHECK HERE TO PROTECT AGAINST EOF!!!!
-        this->moveBuffers(move);
-        // NEED AN EXTRA CHECK HERE TO PROTECT AGAINST EOF!!!!
+        // This should probably be handled better, without failing
+        // but it will have to do for now
+        if (this->moveBuffers(move) != 0) {
+            cout << "ERROR: File too small to fill up buffers!\n";
+            exit(1);
+        }
 
         // If this is the last run, set start to preserve history buffer size otherwise keep start at 0
         this->history_buffer_start = this->history_buffer_end >= history_size ? history_buffer_end - history_size : 0;
@@ -45,7 +64,7 @@ void LZ77::initialiseBuffers(int history_size, int lookahead_size) {
     }
 }
 
-void LZ77::compressAfterInitialisation() {
+void LZ77COMP::compressAfterInitialisation() {
     int move = 0;
     struct token token; 
     int remainder = 0;
@@ -56,8 +75,8 @@ void LZ77::compressAfterInitialisation() {
         // If no match was found, move 1 char, otherwise move the length of the match
         move = (token.offset == 0 ? 1 : (int) token.length);
     }
-    cout << "Remainder: " << remainder << "\n";
-    cout << "Move: " << move << "\n";
+    // cout << "Remainder: " << remainder << "\n";
+    // cout << "Move: " << move << "\n";
     // Finish the moving of the buffers, without changing then end of the lookahead buffer
     if (remainder != -1) {
         this->lookahead_buffer_start += (move - remainder);
@@ -78,7 +97,7 @@ void LZ77::compressAfterInitialisation() {
 
 }
 
-void LZ77::writeTokenToOutputFile(struct token token) {
+void LZ77COMP::writeTokenToOutputFile(struct token token) {
     this->output_file.put(token.offset);
     this->output_file.put(token.length);
 }
@@ -86,11 +105,11 @@ void LZ77::writeTokenToOutputFile(struct token token) {
 /* 
 Start with first character in lookahead buffer, search backwards in history buffer. If there
 is a match check if it is also a match for next char in lookahead buffer. If this is not the
- case, save placement and length somewhere, and look in the rest,of the history buffer. 
+case, save placement and length somewhere, and look in the rest,of the history buffer. 
 When the history buffer start is reached, pick the longest closest match, and return it.    */
 
 /* Finds and returns the longest match, closest to the lookahead buffer */
-struct token LZ77::searchForMatch() {
+struct token LZ77COMP::searchForMatch() {
     int longest = 1; // We only want matches of length >= 2
     int closest = 0; // This default value does not matter
     
@@ -103,7 +122,7 @@ struct token LZ77::searchForMatch() {
     int current = this->history_buffer_end - 1;
     // Go from right to left
     while(current >= this->history_buffer_start) {
-        // If a match is found, go from left to rigth
+        // If a match is found, go from left to right
         if (this->history_buffer[current] == first) {
             // cout << "Match on first char in lookahead buffer: " << first << "\n";
             int temp = current + 1;
@@ -135,7 +154,7 @@ struct token LZ77::searchForMatch() {
 }
 
 /* Move both buffers steps chars ahead */
-int LZ77::moveBuffers(int steps) {
+int LZ77COMP::moveBuffers(int steps) {
     for(int i = 0; i < steps; i++) {
         // This is only there to not flood the memory
         if(this->history_buffer_end >= this->buffer_max_size){
@@ -145,7 +164,7 @@ int LZ77::moveBuffers(int steps) {
         // This is to detect EOF
         unsigned char temp = this->input_file.get();
         if ( this->input_file.eof()) {
-            cout << "Reached end of file with i = " << i << "\n";
+            // cout << "Reached end of file with i = " << i << "\n";
             // Ensures we never return 0 on EOF
             return i == 0 ? -1 : i;
         }
@@ -160,15 +179,15 @@ int LZ77::moveBuffers(int steps) {
 }
 
 // Supposed to tidy up the vectors, when they reach max size
-void LZ77::cleanBuffers() {
+void LZ77COMP::cleanBuffers() {
     cout << "Clean buffers!\n";
 }
 
-void LZ77::setBufferMaxSize(int size) {
+void LZ77COMP::setBufferMaxSize(int size) {
     this->buffer_max_size = size;
 }
 
-void LZ77::incrementIndexes() {
+void LZ77COMP::incrementIndexes() {
     this->lookahead_buffer_start++;
     this->lookahead_buffer_end++;
     this->history_buffer_start++;

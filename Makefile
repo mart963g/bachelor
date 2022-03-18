@@ -4,13 +4,19 @@ EXECS = Tests/run
 
 all: clean lz77 run runTests
 
-lz77: LZ77/LZ77.cpp
-	@echo "Building LZ77..."
-	@$(CC) $(CFLAGS) -c LZ77/LZ77.cpp -o LZ77/LZ77.o
+lz77: LZ77COMP LZ77DECOMP
 
-run: Tests/run.cpp LZ77/LZ77.o LZ77/LZ77.cpp
+LZ77COMP: LZ77/LZ77COMP.cpp
+	@echo "Building LZ77 compresion..."
+	@$(CC) $(CFLAGS) -c LZ77/LZ77COMP.cpp -o LZ77/LZ77COMP.o
+
+LZ77DECOMP: LZ77/LZ77DECOMP.cpp
+	@echo "Building LZ77 decompresion..."
+	@$(CC) $(CFLAGS) -c LZ77/LZ77DECOMP.cpp -o LZ77/LZ77DECOMP.o
+
+run: Tests/run.cpp lz77
 	@echo "Building Tests..."
-	@$(CC) $(CFLAGS) -o Tests/run LZ77/LZ77.o Tests/run.cpp -I LZ77
+	@$(CC) $(CFLAGS) -o Tests/run LZ77/LZ77COMP.o LZ77/LZ77DECOMP.o Tests/run.cpp -I LZ77
 
 runTests:
 	@echo "Running tests...\n"
@@ -18,4 +24,4 @@ runTests:
 
 clean:
 	@echo "Cleaning..."
-	@rm -f *.o */*.o */*.lzip $(EXECS)
+	@rm -f *.o */*.o */*.lzip *.lzip $(EXECS)
