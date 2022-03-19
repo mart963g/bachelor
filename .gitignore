@@ -3,3 +3,4 @@
 !*.*
 *.o
 *.lzip
+Tests/Decompressed/*

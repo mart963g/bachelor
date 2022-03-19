@@ -6,7 +6,6 @@ int main () {
     comp.compressFile("Tests/Hello.txt");
 
     LZ77DECOMP decomp;
-    // decomp.decompressFile("Tests/Hello.txt.lzip", "Tests/HelloDECOMP.txt");
 
 
     // std::ifstream test;
@@ -26,5 +25,6 @@ int main () {
     // }
     // cout << "\n";
 
+    decomp.decompressFile("Tests/Hello.txt.lzip", "Tests/Decompressed/Hello.txt");
     return 0;
 }
