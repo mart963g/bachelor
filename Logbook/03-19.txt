@@ -1,0 +1,8 @@
+I have finished the decompression for LZ77. Most of the work
+was done yesterday, with only some final bug fixes to make it
+all work today.
+I am considering to change the reading and writing of the token,
+such that in the two bytes, such that 11 bits are used for the offset
+and 5 bits are used for the length. In this way the history buffer could
+have a much bigger size, that would also match the real world implementations
+without changing the size of the token.

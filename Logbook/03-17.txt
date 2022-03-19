@@ -1,0 +1,8 @@
+I have completed the LZ77 compression. Only test is a homemade
+small txt file, but this eases the testing since i can keep
+track of how each token is supposed to look. History buffer
+size is defaulted to 10 bytes, and lookahead buffer size
+is defaulted to 5. 
+For now the offset and the length of the match, are in a
+full byte each. This means that the history buffer can not
+be longer than 256 bytes.
