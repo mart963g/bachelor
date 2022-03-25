@@ -39,9 +39,37 @@ void LZ77DECOMP::decompressAfterInitialisation() {
 }
 
 int LZ77DECOMP::readTokenFromInput(struct token &token) {
-    token.offset = this->input_file.get();
-    token.length = this->input_file.get();
+    char* readBuffer = (char*) malloc(2*sizeof(char));
+    this->input_file.read(readBuffer, 2);
+    struct nonMatchToken nonMatchToken = *reinterpret_cast<struct nonMatchToken*>(readBuffer);
+    struct matchToken matchToken = *reinterpret_cast<struct matchToken*>(readBuffer);
+    // Check if the bytes represent a valid non match token, otherwise it must be a match token
+    if (nonMatchToken.non_match == 1 && nonMatchToken.offset == 0) {
+        token = this->getTokenFromNonMatchToken(nonMatchToken);
+        cout << "Found non match token with data: " << token.length << "\n";
+    } else {
+        token = this->getTokenFromMatchToken(matchToken);
+        printf("Found match token with offset %u and length %u \n", token.offset, token.length);
+        // cout << "Found match token with offset: " << token.offset << " and length: " << token.length << "\n";
+    }
+    free(readBuffer);
     return this->input_file.eof() ? 1 : 0;
+}
+
+struct token LZ77DECOMP::getTokenFromNonMatchToken(struct nonMatchToken nonMatchToken) {
+    struct token token;
+    token.offset = 0;
+    token.length = nonMatchToken.length;
+
+    return token;
+}
+
+struct token LZ77DECOMP::getTokenFromMatchToken(struct matchToken matchToken) {
+    struct token token;
+    token.offset = matchToken.offset;
+    token.length = matchToken.length;
+
+    return token;
 }
 
 void LZ77DECOMP::moveBuffer(int steps) {

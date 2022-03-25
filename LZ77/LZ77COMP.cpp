@@ -33,7 +33,6 @@ void LZ77COMP::initialiseCompression(string file_name, string destination_file) 
     this->initialiseBuffers();
 }
 
-/* Has defaults history_size = 10, lookahead_size = 5 */
 void LZ77COMP::initialiseBuffers(int history_size, int lookahead_size) {
     this->lookahead_buffer_end = lookahead_size;
     for(int i = this->lookahead_buffer_start; i < this->lookahead_buffer_end; i++){
@@ -85,6 +84,8 @@ void LZ77COMP::compressAfterInitialisation() {
     }
     // Deal with the remaining bytes of the file
     while (this->lookahead_buffer_start < this->lookahead_buffer_end) {
+        printf("Now in the finishing part with remainder: %d\n", remainder);
+        printf("L buffer start: %d; L buffer end: %d\n", this->lookahead_buffer_start, this->lookahead_buffer_end);
         token = this->searchForMatch();
         this->writeTokenToOutputFile(token);
 
@@ -98,8 +99,32 @@ void LZ77COMP::compressAfterInitialisation() {
 }
 
 void LZ77COMP::writeTokenToOutputFile(struct token token) {
-    this->output_file.put(token.offset);
-    this->output_file.put(token.length);
+    if (token.offset == 0) {
+        struct nonMatchToken writeToken = this->getNonMatchToken(token);
+        this->output_file.write(reinterpret_cast<char*>(&writeToken), sizeof(struct nonMatchToken));
+    } else {
+        struct matchToken writeToken = this->getMatchToken(token);
+        this->output_file.write(reinterpret_cast<char*>(&writeToken), sizeof(struct matchToken));
+    }
+    printf("Writing token to outut file with offset: %u and length %u\n", token.offset, token.length);
+}
+
+struct matchToken LZ77COMP::getMatchToken(struct token token) {
+    struct matchToken writeToken;
+    writeToken.non_match = 0;
+    writeToken.offset = token.offset;
+    writeToken.length = token.length;
+
+    return writeToken;
+}
+
+struct nonMatchToken LZ77COMP::getNonMatchToken(struct token token) {
+    struct nonMatchToken writeToken;
+    writeToken.non_match = 1;
+    writeToken.offset = token.offset;
+    writeToken.length = token.length;
+
+    return writeToken;
 }
 
 /* 
@@ -141,7 +166,7 @@ struct token LZ77COMP::searchForMatch() {
                     // The plus one is needed, because the difference is one lower than the length.
                     longest = temp - current + 1;
                     closest = this->history_buffer_end - current;
-                    match = {(unsigned char) closest, (unsigned char) longest};
+                    match = {(uint16_t) closest, (unsigned char) longest};
                 }
                 temp++;
             }
