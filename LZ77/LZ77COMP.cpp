@@ -47,8 +47,8 @@ int LZ77COMP::initialiseBuffers(int history_size, int lookahead_size) {
         this->lookahead_buffer.push_back(temp);
         this->lookahead_buffer_end++;
     }
-    printf("Exited for loop with L buffer start: %d; L buffer end: %d\n", this->lookahead_buffer_start, this->lookahead_buffer_end);
-    printf("Lookahead buffer: '%s'\n\n", this->lookahead_buffer.data());
+    // printf("Exited for loop with L buffer start: %d; L buffer end: %d\n", this->lookahead_buffer_start, this->lookahead_buffer_end);
+    // printf("Lookahead buffer: '%s'\n\n", this->lookahead_buffer.data());
     int move = 0;
     int remainder = 0;
     /* Runs until history buffer is full */
@@ -64,7 +64,7 @@ int LZ77COMP::initialiseBuffers(int history_size, int lookahead_size) {
 
         if ((remainder = this->moveBuffers(move)) != 0) {
             // If EOF we still need to increment the buffer indexes, before calling finishCompression()
-            printf("Move = %d; Remainder = %d\n\n", move, remainder);
+            // printf("Move = %d; Remainder = %d\n\n", move, remainder);
             this->lookahead_buffer_start += (remainder != -1) ? (move - remainder) : 1;
             this->history_buffer_start += (remainder != -1) ? (move - remainder) : 1;
             this->history_buffer_end += (remainder != -1) ? (move - remainder) : 1;
@@ -74,8 +74,8 @@ int LZ77COMP::initialiseBuffers(int history_size, int lookahead_size) {
 
         // Set start to preserve history buffer size otherwise keep start at 0
         this->history_buffer_start = this->history_buffer_end >= history_size ? this->history_buffer_end - history_size : 0;
-        printf("History start: %d; History end: %d\n", this->history_buffer_start, this->history_buffer_end);
-        printf("Lookahead start: %d; Lookahead end: %d \n\n", this->lookahead_buffer_start, this->lookahead_buffer_end);
+        // printf("History start: %d; History end: %d\n", this->history_buffer_start, this->history_buffer_end);
+        // printf("Lookahead start: %d; Lookahead end: %d \n\n", this->lookahead_buffer_start, this->lookahead_buffer_end);
     }
     return 0;
 }
@@ -84,7 +84,7 @@ void LZ77COMP::compressAfterInitialisation() {
     int move = 0;
     struct token token; 
     int remainder = 0;
-    printf("Is now inside compressAfterInitialisation function!\n\n\n");
+    // printf("Is now inside compressAfterInitialisation function!\n\n\n");
     while ( (remainder = this->moveBuffers(move)) == 0) {
         token = this->searchForMatch();
         this->writeTokenToOutputFile(token);
@@ -99,7 +99,7 @@ void LZ77COMP::compressAfterInitialisation() {
     this->history_buffer_start += (remainder != -1) ? (move - remainder) : move;
     this->history_buffer_end += (remainder != -1) ? (move - remainder) : move;
     // Deal with the remaining bytes of the file
-    printf("Now in the finishing part with remainder: %d and move: %d\n", remainder, move);
+    // printf("Now in the finishing part with remainder: %d and move: %d\n", remainder, move);
     this->finishCompression();
 }
 
@@ -107,7 +107,7 @@ void LZ77COMP::finishCompression() {
     struct token token;
     int move = 0;
     while (this->lookahead_buffer_start < this->lookahead_buffer_end) {
-        printf("L buffer start: %d; L buffer end: %d\n", this->lookahead_buffer_start, this->lookahead_buffer_end);
+        // printf("L buffer start: %d; L buffer end: %d\n", this->lookahead_buffer_start, this->lookahead_buffer_end);
         token = this->searchForMatch();
         this->writeTokenToOutputFile(token);
 
@@ -127,8 +127,8 @@ void LZ77COMP::writeTokenToOutputFile(struct token token) {
         struct matchToken writeToken = this->getMatchToken(token);
         this->output_file.write(reinterpret_cast<char*>(&writeToken), sizeof(struct matchToken));
     }
-    printf("Writing token to output file with offset: %u and length %u\n", token.offset, token.length);
-    printf("L buffer start: %d; L buffer end: %d\n\n", this->lookahead_buffer_start, this->lookahead_buffer_end);
+    // printf("Writing token to output file with offset: %u and length %u\n", token.offset, token.length);
+    // printf("L buffer start: %d; L buffer end: %d\n\n", this->lookahead_buffer_start, this->lookahead_buffer_end);
 }
 
 struct matchToken LZ77COMP::getMatchToken(struct token token) {
@@ -227,7 +227,7 @@ int LZ77COMP::moveBuffers(int steps) {
 
 // Supposed to tidy up the vectors, when they reach max size
 void LZ77COMP::cleanBuffers() {
-    cout << "Clean buffers!\n";
+    // cout << "Clean buffers!\n";
 }
 
 void LZ77COMP::setBufferMaxSize(int size) {

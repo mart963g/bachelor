@@ -48,8 +48,8 @@ class LZ77COMP {
         void writeTokenToOutputFile(struct token token);
         int initialiseCompression(string file_name);
         int initialiseCompression(string file_name, string destination_file);
-        // The history buffer can max be of size 1024, and lookahead max is 32
-        int initialiseBuffers(int history_size = 10, int lookahead_size = 5);
+        // The history buffer can max be of size 1024-1, and lookahead max is 32-1
+        int initialiseBuffers(int history_size = 1023, int lookahead_size = 31);
         void compressAfterInitialisation();
         struct token searchForMatch();
         struct matchToken getMatchToken(struct token token);
