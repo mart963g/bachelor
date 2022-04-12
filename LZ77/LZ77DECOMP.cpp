@@ -22,6 +22,7 @@ void LZ77DECOMP::decompressFile(string file_name) {
     this->decompressAfterInitialisation();
     this->input_file.close();
     this->output_file.close();
+    // this->resetBuffer();
 }
 
 void LZ77DECOMP::decompressFile(string file_name, string destination_file) {

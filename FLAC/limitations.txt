@@ -1,0 +1,5 @@
+Use just mono sound, no additional channels.
+
+Make maybe just a single predictor, unless it does not take a lot of time.
+
+If not enough time to implement Huffman or similar, try to use LZ77 implementation.

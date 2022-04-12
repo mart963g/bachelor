@@ -200,4 +200,5 @@ LIMITED TO WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A
 PARTICULAR PURPOSE.  Some states do not allow disclaimers of
 implied warranties or the exclusion or limitation of consequen-
 tial damages, so the above disclaimers and exclusions may not
-apply to you, and you may have other legal rights.
+apply to you, and you may have other legal rights.  NO OTHER
+WARRANTIES
