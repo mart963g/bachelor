@@ -66,6 +66,7 @@ int LZ77COMP::initialiseBuffers(int history_size, int lookahead_size) {
             // If EOF we still need to increment the buffer indexes, before calling finishCompression()
             // printf("Move = %d; Remainder = %d\n\n", move, remainder);
             int actual_move = (remainder != -1) ? (move - remainder) : 1;
+            // Put the remainin bytes in the history buffer
             this->pumpHistoryBuffer(actual_move);
             this->lookahead_buffer_start += actual_move;
             this->history_buffer_end += actual_move;
@@ -119,6 +120,7 @@ void LZ77COMP::finishCompression() {
 
         // If no match was found, move 1 char, otherwise move the length of the match
         move = (token.offset == 0 ? 1 : (int) token.length);
+        // Put the remainin bytes in the history buffer
         this->pumpHistoryBuffer(move);
         this->lookahead_buffer_start += move;
         this->history_buffer_start = this->history_buffer_end > history_buffer_size ?  this->history_buffer_start + move : this->history_buffer_start;

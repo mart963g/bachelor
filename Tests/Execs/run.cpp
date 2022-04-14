@@ -2,7 +2,7 @@
 #include <filesystem>
 
 int main (int argc, char** argv) {
-    printf("Compression phase...\n");
+    printf("Compression phase LZ77...\n");
     for (int i = 1; i < argc; i++) {
         LZ77COMP comp;
         printf("Compressing %s \n", argv[i]);
@@ -10,7 +10,7 @@ int main (int argc, char** argv) {
     }
     
 
-    printf("\nDecompression phase...\n");
+    printf("\nDecompression phase LZ77...\n");
     for (int i = 1; i < argc; i++) {
         LZ77DECOMP decomp;
         printf("Decompressing %s \n", argv[i]);
