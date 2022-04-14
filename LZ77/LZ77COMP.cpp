@@ -66,9 +66,7 @@ int LZ77COMP::initialiseBuffers(int history_size, int lookahead_size) {
             // If EOF we still need to increment the buffer indexes, before calling finishCompression()
             // printf("Move = %d; Remainder = %d\n\n", move, remainder);
             int actual_move = (remainder != -1) ? (move - remainder) : 1;
-            for(int i = 0; i < actual_move; i++) {
-                this->history_buffer.push_back(this->lookahead_buffer[this->lookahead_buffer_start+i]);
-            }
+            this->pumpHistoryBuffer(actual_move);
             this->lookahead_buffer_start += actual_move;
             this->history_buffer_end += actual_move;
             // Set start to preserve history buffer size otherwise keep start at 0
@@ -102,9 +100,7 @@ void LZ77COMP::compressAfterInitialisation() {
     // Finish the moving of the buffers, without changing the end of the lookahead buffer
     int actual_move = (remainder != -1) ? (move - remainder) : move;
     // Fill the history buffer with the remaining bytes
-    for(int i = 0; i<actual_move; i++) {
-        this->history_buffer.push_back(this->lookahead_buffer[this->lookahead_buffer_start+i]);
-    }
+    this->pumpHistoryBuffer(actual_move);
     this->lookahead_buffer_start += actual_move;
     this->history_buffer_start += actual_move;
     this->history_buffer_end += actual_move;
@@ -123,9 +119,7 @@ void LZ77COMP::finishCompression() {
 
         // If no match was found, move 1 char, otherwise move the length of the match
         move = (token.offset == 0 ? 1 : (int) token.length);
-        for(int i = 0; i < move; i++) {
-            this->history_buffer.push_back(this->lookahead_buffer[this->lookahead_buffer_start+i]);
-        }
+        this->pumpHistoryBuffer(move);
         this->lookahead_buffer_start += move;
         this->history_buffer_start = this->history_buffer_end > history_buffer_size ?  this->history_buffer_start + move : this->history_buffer_start;
         this->history_buffer_end += move;
@@ -256,4 +250,10 @@ void LZ77COMP::incrementIndexes() {
     this->lookahead_buffer_end++;
     this->history_buffer_start++;
     this->history_buffer_end++;
+}
+
+void LZ77COMP::pumpHistoryBuffer(int steps) {
+    for(int i = 0; i < steps; i++) {
+        this->history_buffer.push_back(this->lookahead_buffer[this->lookahead_buffer_start+i]);
+    }
 }

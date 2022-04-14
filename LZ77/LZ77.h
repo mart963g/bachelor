@@ -45,6 +45,7 @@ class LZ77COMP {
         ifstream input_file;
         ofstream output_file;
         int moveBuffers(int steps = 1);
+        void pumpHistoryBuffer(int steps);
         void cleanBuffers();
         void incrementIndexes();
         void writeTokenToOutputFile(struct token token);
