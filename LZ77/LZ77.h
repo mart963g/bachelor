@@ -30,6 +30,8 @@ struct matchToken {
 class LZ77COMP {
     private:
         int buffer_max_size = 2048;
+        // Need this, because multiple functions need access to this number
+        int history_buffer_size = 1023;
         // Contains all the bytes, where possible matches are found for the lookahead buffer
         vector<unsigned char> history_buffer;
         // End is excluded. If it is > 0, the last element is at index (end - 1)

@@ -1,0 +1,2 @@
+Changed the project structure so test files are separated from the executables. Spent a lot of time, on writing a make call that automatically
+compares the original and decompressed files, bytewise.
