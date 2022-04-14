@@ -10,6 +10,8 @@ all: clean lz77 tests runTests diff
 
 hello: clean lz77 runHello
 
+forest: clean flac runForest
+
 lz77: LZ77COMP LZ77DECOMP
 
 flac: FLACCOMP
@@ -43,6 +45,19 @@ runHello:
 	@./Tests/Execs/run Hello.txt
 	@echo "\nChecking that hello files are identical..."
 	@diff Tests/Files/Hello.txt Tests/Decompressed/Hello.txt
+
+runForest:
+	@echo "Building forest test..."
+	@$(CC) $(CFLAGS) -o Tests/Execs/flac FLAC/FLACCOMP.o Tests/Execs/flac.cpp -I FLAC
+	@echo "Running forest test...\n"
+	@./Tests/Execs/flac forest.wav
+	# @echo "\nGenerating hex dump files..."
+	# @xxd Tests/Files/forest.wav > Tests/Files/forest.wav.trash
+	# @xxd Tests/Decompressed/forest.wav > Tests/Decompressed/forest.wav.trash
+	# @echo "Checking that forest files are identical..."
+	# @diff Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
+	# @rm Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
+	
 
 runFlac: flac
 	@$(CC) $(CFLAGS) -o Tests/Execs/flac FLAC/FLACCOMP.o Tests/Execs/flac.cpp -I FLAC
