@@ -1,12 +1,14 @@
 CC = g++
 CFLAGS = -Wall -g -ggdb
-EXECS = Tests/Execs/run
+EXECS = Tests/Execs/run Tests/Execs/flac
 TESTS = Hello.txt shakespeare.txt Tester.png forest.wav
 TEXT_FILES = Hello.txt shakespeare.txt
 NON_TEXT_FILES = Tester.png forest.wav
 DIFF_TEXT = Tests/Files/$(file).trash Tests/Decompressed/$(file).trash
 
 all: clean lz77 tests runTests diff
+
+hello: clean lz77 runHello
 
 lz77: LZ77COMP LZ77DECOMP
 
@@ -18,14 +20,31 @@ LZ77DECOMP: LZ77/LZ77DECOMP.cpp
 	@echo "Building LZ77 decompresion..."
 	@$(CC) $(CFLAGS) -c LZ77/LZ77DECOMP.cpp -o LZ77/LZ77DECOMP.o
 
-tests: Tests/Execs/run.cpp lz77
+flac: FLACCOMP
+	@$(CC) $(CFLAGS) -o Tests/Execs/flac FLAC/FLACCOMP.o Tests/Execs/flac.cpp -I FLAC
+	@echo "Running tests...\n"
+	@./Tests/Execs/flac ${TESTS}
+
+FLACCOMP: FLAC/FLACCOMP.cpp
+	@echo "Building FLAC compression..."
+	@$(CC) $(CFLAGS) -c FLAC/FLACCOMP.cpp -o FLAC/FLACCOMP.o
+
+tests: Tests/Execs/run.cpp Tests/Execs/flac.cpp lz77 flac
 	@echo "Building Tests..."
 	@$(CC) $(CFLAGS) -o Tests/Execs/run LZ77/LZ77COMP.o LZ77/LZ77DECOMP.o Tests/Execs/run.cpp -I LZ77
+	@$(CC) $(CFLAGS) -o Tests/Execs/flac FLAC/FLACCOMP.o Tests/Execs/flac.cpp -I FLAC
 
 runTests: tests
-	@echo "Running tests...\n"
-	@./$(EXECS) ${TESTS}
+	@echo "Running tests general...\n"
+	@$(foreach exec,$(EXECS), ./$(file) ${TESTS};)
 
+runHello:
+	@echo "Building Hello test..."
+	@$(CC) $(CFLAGS) -o Tests/Execs/run LZ77/LZ77COMP.o LZ77/LZ77DECOMP.o Tests/Execs/run.cpp -I LZ77
+	@echo "Running hello test...\n"
+	@./Tests/Execs/run Hello.txt
+	@echo "\nChecking that hello files are identical..."
+	@diff Tests/Files/Hello.txt Tests/Decompressed/Hello.txt
 
 diff:
 	@echo "\nChecking that text files are identical..."
@@ -36,6 +55,9 @@ diff:
 	@$(foreach file,$(NON_TEXT_FILES), echo "Checking $(file)..." && diff $(DIFF_TEXT);)
 	@rm -f */*/*.trash 
 
+sizes:
+	@echo "Sizes of original and decompressed files:\n"
+	@$(foreach file, $(TESTS), ls -l Tests/Files/$(file) Tests/Compressed/$(file).lzip;)
 
 clean:
 	@echo "Cleaning..."

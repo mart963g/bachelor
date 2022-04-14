@@ -1,0 +1,3 @@
+Set up initial functionality for FLAC compression.
+Mostly formalitites, and changing the makefile. Made code to recognize the "RIFF" bytes in the WAVE file, for optimal
+compression later.
