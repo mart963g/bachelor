@@ -46,7 +46,7 @@ runHello:
 	@echo "\nChecking that hello files are identical..."
 	@diff Tests/Files/Hello.txt Tests/Decompressed/Hello.txt
 
-runForest:
+runForest: flac
 	@echo "Building forest test..."
 	@$(CC) $(CFLAGS) -o Tests/Execs/flac FLAC/FLACCOMP.o Tests/Execs/flac.cpp -I FLAC
 	@echo "Running forest test...\n"
