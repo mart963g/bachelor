@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <string.h>
+#include <netinet/in.h>
 
 using namespace std;
 
@@ -19,18 +20,21 @@ struct waveHeader {
 
 class FLACCOMP {
     private:
+        struct waveHeader header;
         int buffer_max_size = 2048;
         vector<unsigned char> buffer;
         ifstream input_file;
         ofstream output_file;
-        int buffer_start = 0;
         int buffer_end = 0;
         void initialiseCompression(string file_name);
         void initialiseCompression(string file_name, string destination_file);
         void compressWaveFile();
         void compressOtherFile();
         int pushToBuffer(int n = 1);
+        int fillOutHeader();
         void cleanBuffer();
+        uint16_t getShortFromLittleEndianBuffer(int start_index);
+        uint32_t getLongFromLittleEndianBuffer(int start_index);
 
     public:
         void compressFile(string file_name);
