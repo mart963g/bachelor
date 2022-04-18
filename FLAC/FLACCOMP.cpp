@@ -2,7 +2,8 @@
 
 using namespace std;
 
-struct DataFrame<uint16_t> frame;
+struct DataFrame<int16_t> frame;
+struct ErrorWrapper<int16_t> errors;
 
 void FLACCOMP::compressFile(string file_name) {
     this->initialiseCompression(file_name, file_name);
@@ -41,7 +42,7 @@ void FLACCOMP::compressWaveFile() {
     string data = (char*) &this->buffer.data()[this->buffer_end-4];
     if (data == "data") {
         while(fillOutFrame() == 0) {
-            printf("Filled a whole frame!!\n");
+            // printf("Filled a whole frame!!\n");
             processFrame();
             writeFrame();
             break;
@@ -76,39 +77,79 @@ int FLACCOMP::fillOutFrame() {
 }
 
 void FLACCOMP::processFrame() {
-    this->initialiseErrorArrays("left");
-    printf("Processing!\n");
-    this->initialiseErrorArrays("right");
+    this->processSubFrame("left");
+    this->processSubFrame("right");
 }
 
+void FLACCOMP::processSubFrame(string channel) {
+    this->initialiseErrorArrays(channel);
+    this->processErrors(channel);
+    printf("E0 error sum: %ld\n", errors.e0_sum);
+    printf("E1 error sum: %ld\n", errors.e1_sum);
+    printf("E2 error sum: %ld\n", errors.e2_sum);
+    printf("E3 error sum: %ld\n", errors.e3_sum);
+    
+}
+
+/*  Fills out the first three entries in each of the
+    error arrays, since these are special cases */
 void FLACCOMP::initialiseErrorArrays(string channel) {
-    cout << "Initialising on channel " + channel + "\n";
+    // cout << "Initialising on channel " + channel + "\n";
     if (channel == "left") {
         for(int i = 0; i < 3; i++) {
-            frame.e0[i] = frame.e1[i] = frame.e2[i] = frame.e3[i] = frame.left[i];
+            errors.e0[i] = errors.e1[i] = errors.e2[i] = errors.e3[i] = frame.left[i];
         }
     }
     else if (channel == "right") {
         for(int i = 0; i < 3; i++) {
-            frame.e0[i] = frame.e1[i] = frame.e2[i] = frame.e3[i] = frame.right[i];
+            errors.e0[i] = errors.e1[i] = errors.e2[i] = errors.e3[i] = frame.right[i];
         }
     }
     for(int i = 1; i < 3; i++) {
-        frame.e1[i] = frame.e0[i] - frame.e0[i-1];
+        errors.e1[i] = errors.e0[i] - errors.e0[i-1];
         if (i > 1) {
-            frame.e2[i] = frame.e1[i] - frame.e1[i-1];
+            errors.e2[i] = errors.e1[i] - errors.e1[i-1];
         } if (i > 2) {
-            frame.e3[i] = frame.e2[i] - frame.e2[i-1];
+            errors.e3[i] = errors.e2[i] - errors.e2[i-1];
+        }
+
+    }
+}
+
+// Fills out the error arrays, and calculates the error sums
+void FLACCOMP::processErrors(string channel) {
+    if (channel == "left") {
+        for (int i = 3; i < this->frame_sample_size; i++){
+            errors.e0[i] = frame.left[i];
+            errors.e1[i] = errors.e0[i] - errors.e0[i-1];
+            errors.e2[i] = errors.e1[i] - errors.e1[i-1];
+            errors.e3[i] = errors.e2[i] - errors.e2[i-1];
         }
     }
-    // STILL NEED TO SUM UP THE FIRST 3 ERRORS
+    else if (channel == "right") {
+        for (int i = 3; i < this->frame_sample_size; i++){
+            errors.e0[i] = frame.right[i];
+            errors.e1[i] = errors.e0[i] - errors.e0[i-1];
+            errors.e2[i] = errors.e1[i] - errors.e1[i-1];
+            errors.e3[i] = errors.e2[i] - errors.e2[i-1];
+        }
+    }
+    // Codewise it is prettier to separate this as here, but it is less efficient
+    // since it requires more memory reads, that are probably not cached
+    for (int i = 0; i < this->frame_sample_size; i++) {
+        errors.e0_sum += abs(errors.e0[i]);
+        errors.e1_sum += abs(errors.e1[i]);
+        errors.e2_sum += abs(errors.e2[i]);
+        errors.e3_sum += abs(errors.e3[i]);
+    }
+    
 }
 
 int FLACCOMP::writeFrame() {
-    for (int i = 0; i < 2; i++) {
-        printf("Left channel sample: %u\n", frame.left[i]);
-        printf("Right channel sample: %u\n", frame.right[i]);
-    }
+    // for (int i = 0; i < 10; i++) {
+    //     cout << "Left channel sample: " << frame.left[i] << "\n";
+    //     cout << "Right channel sample: " << frame.right[i] << "\n";
+    // }
     
     printf("Writing!\n");
 

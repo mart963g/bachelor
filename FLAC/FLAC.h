@@ -27,6 +27,11 @@ struct DataFrame {
     // Supporting stereo files as the default
     I left[frame_sample_size_const];
     I right[frame_sample_size_const];
+};
+
+// Generic to maybe support different bit depths in future
+template<typename I>
+struct ErrorWrapper {
     I e0[frame_sample_size_const];
     I e1[frame_sample_size_const];
     I e2[frame_sample_size_const];
@@ -54,7 +59,9 @@ class FLACCOMP {
         int fillOutHeader();
         int fillOutFrame();
         void processFrame();
+        void processSubFrame(string channel);
         void initialiseErrorArrays(string channel);
+        void processErrors(string channel);
         int writeFrame();
         void cleanBuffer();
         uint16_t getShortFromLittleEndianBuffer(int start_index);
