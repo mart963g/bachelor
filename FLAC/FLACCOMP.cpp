@@ -20,7 +20,7 @@ void FLACCOMP::compressFile(string file_name, string destination_file) {
 // Detect file type, and initialise compression accordingly
 void FLACCOMP::initialiseCompression(string file_name, string destination_file) {
     this->input_file.open(file_name, ios::binary);
-    this->output_file.open(destination_file + ".flacc", ios::binary);
+    this->output_file.open(destination_file + ".flak", ios::binary);
     this->pushToBuffer(4);
     string test = (char*) this->buffer.data();
     if (test == "RIFF") {
@@ -41,10 +41,11 @@ void FLACCOMP::compressWaveFile() {
     this->pushToBuffer(4);
     string data = (char*) &this->buffer.data()[this->buffer_end-4];
     if (data == "data") {
+        // This is the size of the data in bytes. Should probably use this later
+        this->pushToBuffer(4);
         while(fillOutFrame() == 0) {
             // printf("Filled a whole frame!!\n");
             processFrame();
-            writeFrame();
             break;
         }
     } else {
@@ -64,13 +65,15 @@ int FLACCOMP::fillOutFrame() {
     // for (int i = 0; i < 2; i++) {
         ret = this->pushToBuffer(this->sample_byte_depth);
         if (ret != 0) break;
-        // This line makes some assumptions, that breaks if the bit depth is not 16
+        // This function makes some assumptions, that breaks if the bit depth is not 16
         frame.left[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
 
-        ret = this->pushToBuffer(this->sample_byte_depth);
-        if (ret != 0) break;
-        // This line makes some assumptions, that breaks if the bit depth is not 16
-        frame.right[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+        if (wave_header.NumChannels > 1) {
+            ret = this->pushToBuffer(this->sample_byte_depth);
+            if (ret != 0) break;
+            // This function makes some assumptions, that breaks if the bit depth is not 16
+            frame.right[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+        }
     }
 
     return ret;
@@ -78,17 +81,28 @@ int FLACCOMP::fillOutFrame() {
 
 void FLACCOMP::processFrame() {
     this->processSubFrame("left");
-    this->processSubFrame("right");
+    if (wave_header.NumChannels > 1) {
+        this->processSubFrame("right");
+    }
 }
 
 void FLACCOMP::processSubFrame(string channel) {
     this->initialiseErrorArrays(channel);
     this->processErrors(channel);
-    printf("E0 error sum: %ld\n", errors.e0_sum);
-    printf("E1 error sum: %ld\n", errors.e1_sum);
-    printf("E2 error sum: %ld\n", errors.e2_sum);
-    printf("E3 error sum: %ld\n", errors.e3_sum);
-    
+    // printf("E0 error sum: %ld\n", errors.sums[0]);
+    // printf("E1 error sum: %ld\n", errors.sums[1]);
+    // printf("E2 error sum: %ld\n", errors.sums[2]);
+    // printf("E3 error sum: %ld\n", errors.sums[3]);
+    long lowest = errors.sums[0];
+    int index = 0;
+    for (int i = 1; i < 4; i++) {
+        if (errors.sums[i] < lowest) {
+            index = i;
+            lowest = errors.sums[i];
+        }
+    }
+    // printf("Lowest error is order: %d with error: %ld\n", index, lowest);
+    this->encodeResiduals(index);
 }
 
 /*  Fills out the first three entries in each of the
@@ -137,19 +151,16 @@ void FLACCOMP::processErrors(string channel) {
     // Codewise it is prettier to separate this as here, but it is less efficient
     // since it requires more memory reads, that are probably not cached
     for (int i = 0; i < this->frame_sample_size; i++) {
-        errors.e0_sum += abs(errors.e0[i]);
-        errors.e1_sum += abs(errors.e1[i]);
-        errors.e2_sum += abs(errors.e2[i]);
-        errors.e3_sum += abs(errors.e3[i]);
+        errors.sums[0] += abs(errors.e0[i]);
+        errors.sums[1] += abs(errors.e1[i]);
+        errors.sums[2] += abs(errors.e2[i]);
+        errors.sums[3] += abs(errors.e3[i]);
     }
     
 }
 
-int FLACCOMP::writeFrame() {
-    // for (int i = 0; i < 10; i++) {
-    //     cout << "Left channel sample: " << frame.left[i] << "\n";
-    //     cout << "Right channel sample: " << frame.right[i] << "\n";
-    // }
+int FLACCOMP::writeSubFrame(string channel) {
+    
     
     printf("Writing!\n");
 
@@ -210,10 +221,30 @@ int FLACCOMP::pushToBuffer(int n) {
     return 0;
 }
 
-void FLACCOMP::cleanBuffer() {
-    // Hopefully at some point this will be implemented
+void FLACCOMP::encodeResiduals(int order) {
+    switch (order)
+    {
+    case 0:
+        /* code */
+        break;
+    case 1:
+        break;
+    
+    case 2:
+        break;
+    
+    case 3:
+        break;
+
+    default:
+        cout << "Error: Invalid predicter chosen!\n";
+    }
 }
 
 void FLACCOMP::setFrameSampleSize(int size) {
     this->frame_sample_size = size;
+}
+
+void FLACCOMP::cleanBuffer() {
+    // Hopefully at some point this will be implemented
 }

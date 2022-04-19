@@ -13,7 +13,7 @@ int main (int argc, char** argv) {
     // for (int i = 1; i < argc; i++) {
     //     FLACDECOMP decomp;
     //     printf("Decompressing %s \n", argv[i]);
-    //     decomp.decompressFile("Tests/Compressed/" + string(argv[i]) + ".lzip", "Tests/Decompressed/" + string(argv[i]));
+    //     decomp.decompressFile("Tests/Compressed/" + string(argv[i]) + ".flak", "Tests/Decompressed/" + string(argv[i]));
     // }
 
     return 0;

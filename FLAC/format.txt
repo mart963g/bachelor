@@ -1,0 +1,23 @@
+Format specification of frames and headers in custom FLAC/Audiopak/Shorten implementation.
+
+Metadata:
+Undecided if Wave header will be put uncompressed in the compressed file. It probably will, wrapped in some header.
+From here the decompresser will read stuff like sample bit depth, number of channels, and number of samples per frame.
+Possibly the number of zero value samples appended to the end of the last frame. 
+
+
+Frame:
+A frame has a header. The frame header needs to show which channel it is displaying data for.
+This could also just be implicit from the order.
+The frame header also needs to display which order predictor was used (from 0 to 3, only 2 bits needed), and the Golomb parameter k.
+
+
+FRAME HEADER FORMAT:
+<2> Shows which channel. 0 = left, 1 = right. In case of mono sound, this is always 0.
+<2> Shows which predictor order was used. Number p from 0 to 3.
+<4> The golomb parameter k. For early testing purposes this is 0. 
+<16*p> The first p samples, where p is the predictor order. (Little endian signed short)
+
+
+NOTE:
+A frame here follows the frame concept from the Audiopak paper. This mostly resembles a subframe in the FLAC format.

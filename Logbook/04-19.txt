@@ -1,0 +1,2 @@
+Decided to try and write the unencoded residuals to a file, and start working on an early decompresser
+before starting on the rice coding part.

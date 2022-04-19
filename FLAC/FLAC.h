@@ -36,10 +36,7 @@ struct ErrorWrapper {
     I e1[frame_sample_size_const];
     I e2[frame_sample_size_const];
     I e3[frame_sample_size_const];
-    long e0_sum = 0;
-    long e1_sum = 0;
-    long e2_sum = 0;
-    long e3_sum = 0;
+    long sums[4];
 };
 
 class FLACCOMP {
@@ -62,7 +59,8 @@ class FLACCOMP {
         void processSubFrame(string channel);
         void initialiseErrorArrays(string channel);
         void processErrors(string channel);
-        int writeFrame();
+        void encodeResiduals(int order);
+        int writeSubFrame(string channel);
         void cleanBuffer();
         uint16_t getShortFromLittleEndianBuffer(int start_index);
         uint32_t getLongFromLittleEndianBuffer(int start_index);

@@ -1,9 +1,9 @@
 CC = g++
 CFLAGS = -Wall -g -ggdb
 EXECS = Tests/Execs/run
-TESTS = Hello.txt shakespeare.txt Tester.png forest.wav
+TESTS = Hello.txt shakespeare.txt Tester.png forest.wav speech.wav
 TEXT_FILES = Hello.txt shakespeare.txt
-NON_TEXT_FILES = Tester.png forest.wav
+NON_TEXT_FILES = Tester.png forest.wav speech.wav
 DIFF_TEXT = Tests/Files/$(file).trash Tests/Decompressed/$(file).trash
 
 all: clean lz77 tests runTests diff
