@@ -57,6 +57,12 @@ runForest: flac
 	# @echo "Checking that forest files are identical..."
 	# @diff Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
 	# @rm Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
+
+runSpeech: flac
+	@echo "Building speech test..."
+	@$(CC) $(CFLAGS) -o Tests/Execs/flac FLAC/FLACCOMP.o Tests/Execs/flac.cpp -I FLAC
+	@echo "Running speech test...\n"
+	@./Tests/Execs/flac speech.wav
 	
 
 runFlac: flac

@@ -38,18 +38,10 @@ void FLACCOMP::initialiseCompression(string file_name, string destination_file) 
 
 void FLACCOMP::compressWaveFile() {
     this->fillOutHeader();
-    this->pushToBuffer(4);
-    string data = (char*) &this->buffer.data()[this->buffer_end-4];
-    if (data == "data") {
-        // This is the size of the data in bytes. Should probably use this later
-        this->pushToBuffer(4);
-        while(fillOutFrame() == 0) {
-            // printf("Filled a whole frame!!\n");
-            processFrame();
-            break;
-        }
-    } else {
-        printf("The data section is further away than normally!\n");
+    while(this->fillOutFrame() == 0) {
+        // printf("Filled a whole frame!!\n");
+        processFrame();
+        // break;
     }
 }
 
@@ -102,7 +94,9 @@ void FLACCOMP::processSubFrame(string channel) {
         }
     }
     // printf("Lowest error is order: %d with error: %ld\n", index, lowest);
-    this->encodeResiduals(index);
+    this->writeSubFrameRaw(channel, index);
+    // Commented out for now
+    // this->encodeResiduals(index);
 }
 
 /*  Fills out the first three entries in each of the
@@ -159,15 +153,56 @@ void FLACCOMP::processErrors(string channel) {
     
 }
 
-int FLACCOMP::writeSubFrame(string channel) {
+void FLACCOMP::writeSubFrameRaw(string channel, int order) {
+    this->writeWaveHeader();
+    unsigned char write_channel = channel == "left" ? 0 : 1;
+    unsigned char write_order = order;
+    unsigned char k = 0;
+    unsigned char write = (write_channel << 6) | (write_order << 4) | k;
+    printf("Header char: %u\n", write);
+    this->output_file.put(write);
+    for (int i = 0; i < order; i++) {
+        if (channel == "left") {
+            printf("Error: %d\n", frame.left[i]);
+            this->writeSignedShortToFile(frame.left[i]);
+        } else if (channel == "right"){
+            printf("Error: %d\n", frame.right[i]);
+            this->writeSignedShortToFile(frame.right[i]);
+        }
+    }
+    // This doubled array is to avoid typing the whole class,
+    // taking the generic template as a parameter in a function
+    int16_t error_array[frame_sample_size_const];
+    switch (order) {
+        case 0:
+            copy_n(errors.e0, frame_sample_size_const, error_array);
+            break;
+        case 1:
+            copy_n(errors.e1, frame_sample_size_const, error_array);
+            break;
+        case 2:
+            copy_n(errors.e2, frame_sample_size_const, error_array);
+            break;
+        case 3:
+            copy_n(errors.e3, frame_sample_size_const, error_array);
+            break;
+        default:
+            break;
+    }
+    // for (int i = order; i < frame_sample_size_const; i++) {
+    for (int i = order; i < 10; i++) {
+        // printf("Error: %d\n", error_array[i]);
+        this->writeSignedShortToFile(error_array[i]);
+    }
     
-    
-    printf("Writing!\n");
+}
 
-    return 0;
+void FLACCOMP::writeWaveHeader() {
+    
 }
 
 int FLACCOMP::fillOutHeader() {
+    this->wave_header.FileSize = this->getLongFromLittleEndianBuffer(4);
     this->pushToBuffer(10);
     this->wave_header.AudioFormat = this->getShortFromLittleEndianBuffer(this->buffer_end-2);
     this->pushToBuffer(2);
@@ -181,6 +216,14 @@ int FLACCOMP::fillOutHeader() {
     this->pushToBuffer(2);
     this->wave_header.BitsPerSample = this->getShortFromLittleEndianBuffer(this->buffer_end-2);
     this->sample_byte_depth = this->wave_header.BitsPerSample/8;
+    this->pushToBuffer(4);
+    string data = (char*) &this->buffer.data()[this->buffer_end-4];
+    if (data == "data") {
+        this->pushToBuffer(4);
+        this->wave_header.DataSize = this->getLongFromLittleEndianBuffer(this->buffer_end-4);
+    } else {
+        printf("The data section is further away than normally!\n");
+    }
     // printf("Audioformat:        %u\n", this->wave_header.AudioFormat);
     // printf("Number of channels: %u\n", this->wave_header.NumChannels);
     // printf("Sample rate:        %u\n", this->wave_header.SampleRate);
@@ -239,6 +282,15 @@ void FLACCOMP::encodeResiduals(int order) {
     default:
         cout << "Error: Invalid predicter chosen!\n";
     }
+}
+
+void FLACCOMP::writeSignedShortToFile(int16_t number) {
+    unsigned char write = number & 255;
+    // printf("First char: %u\n", write);
+    this->output_file.put(write);
+    write = (number >> 8) & 255;
+    // printf("Second char: %u\n", write);
+    this->output_file.put(write);
 }
 
 void FLACCOMP::setFrameSampleSize(int size) {

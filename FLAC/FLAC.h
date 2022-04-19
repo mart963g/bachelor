@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <algorithm>
 #include <string.h>
 #include <netinet/in.h>
 
@@ -13,12 +14,14 @@ using namespace std;
 const int frame_sample_size_const = 576;
 
 struct waveHeader {
+    uint32_t FileSize;
     uint16_t AudioFormat;
     uint16_t NumChannels;
     uint32_t SampleRate;
     uint32_t ByteRate;
     uint16_t BlockAlign;
     uint16_t BitsPerSample;
+    uint32_t DataSize;
 };
 
 // Generic to maybe support different bit depths in future
@@ -61,7 +64,10 @@ class FLACCOMP {
         void processErrors(string channel);
         void encodeResiduals(int order);
         int writeSubFrame(string channel);
+        void writeSubFrameRaw(string channel, int order);
+        void writeSignedShortToFile(int16_t number);
         void cleanBuffer();
+        void writeWaveHeader();
         uint16_t getShortFromLittleEndianBuffer(int start_index);
         uint32_t getLongFromLittleEndianBuffer(int start_index);
         int16_t getSignedShortFromLittleEndianBuffer(int start_index);
@@ -71,6 +77,18 @@ class FLACCOMP {
         void compressFile(string file_name, string destination_file);
         void setFrameSampleSize(int size);
         void setBufferMaxSize(int size);
+};
+
+class FLACDECOMP {
+    private:
+        struct waveHeader wave_header;
+        int buffer_max_size = 2048;
+        int fillOutHeader();
+        void initialiseDecompression(string file_name, string destination_file);
+
+    public:
+        void decompressFile(string file_name);
+        void decompressFile(string file_name, string destination_file);
 };
 
 

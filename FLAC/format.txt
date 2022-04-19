@@ -5,6 +5,11 @@ Undecided if Wave header will be put uncompressed in the compressed file. It pro
 From here the decompresser will read stuff like sample bit depth, number of channels, and number of samples per frame.
 Possibly the number of zero value samples appended to the end of the last frame. 
 
+METADATA FORMAT:
+<4> The string "FLAK" ascii encoded
+<44> The original uncompressed WAV header
+
+
 
 Frame:
 A frame has a header. The frame header needs to show which channel it is displaying data for.
