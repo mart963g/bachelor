@@ -13,14 +13,16 @@ using namespace std;
 // Defines the frame size used in the program
 const int frame_sample_size_const = 576;
 
+/*  Struct for containing wave header.
+    Default values for compression of non Wave files. */
 struct waveHeader {
     uint32_t FileSize;
-    uint16_t AudioFormat;
-    uint16_t NumChannels;
+    uint16_t AudioFormat = 1;
+    uint16_t NumChannels = 1;
     uint32_t SampleRate;
     uint32_t ByteRate;
-    uint16_t BlockAlign;
-    uint16_t BitsPerSample;
+    uint16_t BlockAlign = 1;
+    uint16_t BitsPerSample = 8;
     uint32_t DataSize;
 };
 
@@ -89,12 +91,20 @@ class FLAKDECOMP {
         vector<unsigned char> buffer;
         int buffer_max_size = 2048;
         int buffer_end = 0;
-        int fillOutHeader();
+        int frame_sample_size = frame_sample_size_const;
+        int sample_byte_depth = 2;
         void initialiseDecompression(string file_name, string destination_file);
         int pushToBuffer(int n = 1);
         void cleanBuffer();
         void decompressWaveFile();
         void decompressOtherFile();
+        int fillOutHeader();
+        void writeWaveHeader();
+        int readFrame();
+        void processFrame();
+        uint16_t getShortFromLittleEndianBuffer(int start_index);
+        uint32_t getLongFromLittleEndianBuffer(int start_index);
+        int16_t getSignedShortFromLittleEndianBuffer(int start_index);
 
     public:
         void decompressFile(string file_name);

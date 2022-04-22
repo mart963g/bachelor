@@ -6,7 +6,7 @@ TEXT_FILES = Hello.txt shakespeare.txt
 NON_TEXT_FILES = Tester.png forest.wav speech.wav
 DIFF_TEXT = Tests/Files/$(file).trash Tests/Decompressed/$(file).trash
 
-all: clean lz77 tests runTests diff
+all: clean lz77 flak tests runTests diff
 
 hello: clean lz77 runHello
 
@@ -14,7 +14,7 @@ forest: clean flak runForest
 
 lz77: LZ77COMP LZ77DECOMP
 
-flak: FLAKCOMP
+flak: FLAKCOMP FLAKDECOMP
 
 LZ77COMP: LZ77/LZ77COMP.cpp
 	@echo "Building LZ77 compresion..."
@@ -24,15 +24,18 @@ LZ77DECOMP: LZ77/LZ77DECOMP.cpp
 	@echo "Building LZ77 decompresion..."
 	@$(CC) $(CFLAGS) -c LZ77/LZ77DECOMP.cpp -o LZ77/LZ77DECOMP.o
 
-
 FLAKCOMP: FLAK/FLAKCOMP.cpp
 	@echo "Building FLAK compression..."
 	@$(CC) $(CFLAGS) -c FLAK/FLAKCOMP.cpp -o FLAK/FLAKCOMP.o
 
+FLAKDECOMP: FLAK/FLAKDECOMP.cpp
+	@echo "Building FLAK decompresion..."
+	@$(CC) $(CFLAGS) -c FLAK/FLAKDECOMP.cpp -o FLAK/FLAKDECOMP.o
+
 tests: Tests/Execs/run.cpp Tests/Execs/flak.cpp lz77 flak
 	@echo "Building Tests..."
 	@$(CC) $(CFLAGS) -o Tests/Execs/run LZ77/LZ77COMP.o LZ77/LZ77DECOMP.o Tests/Execs/run.cpp -I LZ77
-	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o Tests/Execs/flak.cpp -I FLAK
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
 
 runTests: tests
 	@echo "Running tests...\n"
@@ -48,7 +51,7 @@ runHello:
 
 runForest: flak
 	@echo "Building forest test..."
-	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o Tests/Execs/flak.cpp -I FLAK
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
 	@echo "Running forest test...\n"
 	@./Tests/Execs/flak forest.wav
 	# @echo "\nGenerating hex dump files..."
@@ -60,7 +63,7 @@ runForest: flak
 
 runSpeech: flak
 	@echo "Building speech test..."
-	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o Tests/Execs/flak.cpp -I FLAK
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
 	@echo "Running speech test...\n"
 	@./Tests/Execs/flak speech.wav
 	
@@ -71,7 +74,7 @@ runSpeech: flak
 
 runFlak: flak
 	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o Tests/Execs/flak.cpp -I FLAK
-	@echo "Running tests...\n"
+	@echo "Running tests FLAK...\n"
 	@./Tests/Execs/flak ${TESTS}
 
 diff:

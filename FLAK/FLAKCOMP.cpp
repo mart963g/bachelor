@@ -22,11 +22,11 @@ void FLAKCOMP::initialiseCompression(string file_name, string destination_file) 
     this->input_file.open(file_name, ios::binary);
     this->output_file.open(destination_file + ".flak", ios::binary);
     this->pushToBuffer(4);
-    string test = (char*) this->buffer.data();
-    if (test == "RIFF") {
+    char* test = (char*) this->buffer.data();
+    if (!memcmp(test, "RIFF", 4)) {
         this->pushToBuffer(8);
-        string wave = (char*) &this->buffer.data()[8];
-        if (wave == "WAVE") {
+        char* wave = (char*) &this->buffer.data()[8];
+        if (!memcmp(wave, "WAVE", 4)) {
             this->compressWaveFile();
         } else {
             this->compressOtherFile();
@@ -50,7 +50,9 @@ void FLAKCOMP::compressWaveFile() {
     }
     printf("Computed frames: %d\n", count);
     printf("Computed Samples: %d\n", computed_samples);
-    this->processLastFrame(computed_samples);
+    if (computed_samples > 0) {
+        this->processLastFrame(computed_samples);
+    }
 }
 
 void FLAKCOMP::compressOtherFile() {
@@ -103,7 +105,7 @@ int FLAKCOMP::fillOutFrame() {
         if (wave_header.NumChannels > 1) {
             ret = this->pushToBuffer(this->sample_byte_depth);
             if (ret != 0) {
-                return (i == 0 ? -1 : i);
+                return (i == 0 ? -2 : i);
             }
             // This function makes some assumptions, that breaks if the bit depth is not 16
             frame.right[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
@@ -258,8 +260,8 @@ int FLAKCOMP::fillOutHeader() {
     this->wave_header.BitsPerSample = this->getShortFromLittleEndianBuffer(this->buffer_end-2);
     this->sample_byte_depth = this->wave_header.BitsPerSample/8;
     this->pushToBuffer(4);
-    string data = (char*) &this->buffer.data()[this->buffer_end-4];
-    if (data == "data") {
+    char* data = (char*) &this->buffer.data()[this->buffer_end-4];
+    if (!memcmp(data, "data", 4)) {
         this->pushToBuffer(4);
         this->wave_header.DataSize = this->getLongFromLittleEndianBuffer(this->buffer_end-4);
     } else {
