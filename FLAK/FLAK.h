@@ -1,5 +1,5 @@
-#ifndef FLAC_H
-#define FLAC_H
+#ifndef FLAK_H
+#define FLAK_H
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -42,7 +42,7 @@ struct ErrorWrapper {
     long sums[4];
 };
 
-class FLACCOMP {
+class FLAKCOMP {
     private:
         struct waveHeader wave_header;
         int buffer_max_size = 2048;
@@ -81,7 +81,7 @@ class FLACCOMP {
         void setBufferMaxSize(int size);
 };
 
-class FLACDECOMP {
+class FLAKDECOMP {
     private:
         struct waveHeader wave_header;
         ifstream input_file;
@@ -92,6 +92,9 @@ class FLACDECOMP {
         int fillOutHeader();
         void initialiseDecompression(string file_name, string destination_file);
         int pushToBuffer(int n = 1);
+        void cleanBuffer();
+        void decompressWaveFile();
+        void decompressOtherFile();
 
     public:
         void decompressFile(string file_name);

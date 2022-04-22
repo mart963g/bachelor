@@ -1,6 +1,6 @@
 CC = g++
 CFLAGS = -Wall -g -ggdb
-EXECS = Tests/Execs/run
+EXECS = Tests/Execs/run Tests/Execs/flak
 TESTS = Hello.txt shakespeare.txt Tester.png forest.wav speech.wav
 TEXT_FILES = Hello.txt shakespeare.txt
 NON_TEXT_FILES = Tester.png forest.wav speech.wav
@@ -10,11 +10,11 @@ all: clean lz77 tests runTests diff
 
 hello: clean lz77 runHello
 
-forest: clean flac runForest
+forest: clean flak runForest
 
 lz77: LZ77COMP LZ77DECOMP
 
-flac: FLACCOMP
+flak: FLAKCOMP
 
 LZ77COMP: LZ77/LZ77COMP.cpp
 	@echo "Building LZ77 compresion..."
@@ -25,14 +25,14 @@ LZ77DECOMP: LZ77/LZ77DECOMP.cpp
 	@$(CC) $(CFLAGS) -c LZ77/LZ77DECOMP.cpp -o LZ77/LZ77DECOMP.o
 
 
-FLACCOMP: FLAC/FLACCOMP.cpp
-	@echo "Building FLAC compression..."
-	@$(CC) $(CFLAGS) -c FLAC/FLACCOMP.cpp -o FLAC/FLACCOMP.o
+FLAKCOMP: FLAK/FLAKCOMP.cpp
+	@echo "Building FLAK compression..."
+	@$(CC) $(CFLAGS) -c FLAK/FLAKCOMP.cpp -o FLAK/FLAKCOMP.o
 
-tests: Tests/Execs/run.cpp Tests/Execs/flac.cpp lz77 flac
+tests: Tests/Execs/run.cpp Tests/Execs/flak.cpp lz77 flak
 	@echo "Building Tests..."
 	@$(CC) $(CFLAGS) -o Tests/Execs/run LZ77/LZ77COMP.o LZ77/LZ77DECOMP.o Tests/Execs/run.cpp -I LZ77
-	@$(CC) $(CFLAGS) -o Tests/Execs/flac FLAC/FLACCOMP.o Tests/Execs/flac.cpp -I FLAC
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o Tests/Execs/flak.cpp -I FLAK
 
 runTests: tests
 	@echo "Running tests...\n"
@@ -46,11 +46,11 @@ runHello:
 	@echo "\nChecking that hello files are identical..."
 	@diff Tests/Files/Hello.txt Tests/Decompressed/Hello.txt
 
-runForest: flac
+runForest: flak
 	@echo "Building forest test..."
-	@$(CC) $(CFLAGS) -o Tests/Execs/flac FLAC/FLACCOMP.o Tests/Execs/flac.cpp -I FLAC
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o Tests/Execs/flak.cpp -I FLAK
 	@echo "Running forest test...\n"
-	@./Tests/Execs/flac forest.wav
+	@./Tests/Execs/flak forest.wav
 	# @echo "\nGenerating hex dump files..."
 	# @xxd Tests/Files/forest.wav > Tests/Files/forest.wav.trash
 	# @xxd Tests/Decompressed/forest.wav > Tests/Decompressed/forest.wav.trash
@@ -58,17 +58,21 @@ runForest: flac
 	# @diff Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
 	# @rm Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
 
-runSpeech: flac
+runSpeech: flak
 	@echo "Building speech test..."
-	@$(CC) $(CFLAGS) -o Tests/Execs/flac FLAC/FLACCOMP.o Tests/Execs/flac.cpp -I FLAC
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o Tests/Execs/flak.cpp -I FLAK
 	@echo "Running speech test...\n"
-	@./Tests/Execs/flac speech.wav
+	@./Tests/Execs/flak speech.wav
+	
+	
+#@echo "Sizes:"
+#@ls -l Tests/Files/speech.wav Tests/Compressed/speech.wav.flak
 	
 
-runFlac: flac
-	@$(CC) $(CFLAGS) -o Tests/Execs/flac FLAC/FLACCOMP.o Tests/Execs/flac.cpp -I FLAC
+runFlak: flak
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o Tests/Execs/flak.cpp -I FLAK
 	@echo "Running tests...\n"
-	@./Tests/Execs/flac ${TESTS}
+	@./Tests/Execs/flak ${TESTS}
 
 diff:
 	@echo "\nChecking that text files are identical..."
@@ -85,4 +89,4 @@ sizes:
 
 clean:
 	@echo "Cleaning..."
-	@rm -f *.o */*.o */*/*.lzip */*.lzip $(EXECS) 
+	@rm -f *.o */*.o */*/*.lzip */*.lzip */*/*.flak */*.flak Tests/Decompressed/* $(EXECS) 
