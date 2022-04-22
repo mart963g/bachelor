@@ -1,23 +1,23 @@
-#include "FLAC.h"
+#include "FLAK.h"
 
 using namespace std;
 
 struct DataFrame<int16_t> frame;
 
-void FLACDECOMP::decompressFile(string file_name) {
+void FLAKDECOMP::decompressFile(string file_name) {
     this->initialiseDecompression(file_name, file_name);
     this->input_file.close();
     this->output_file.close();
 }
 
-void FLACDECOMP::decompressFile(string file_name, string destination_file) {
+void FLAKDECOMP::decompressFile(string file_name, string destination_file) {
     this->initialiseDecompression(file_name, destination_file);
     this->input_file.close();
     this->output_file.close();
 }
 
 
-void FLACDECOMP::initialiseDecompression(string file_name, string destination_file) {
+void FLAKDECOMP::initialiseDecompression(string file_name, string destination_file) {
     this->input_file.open(file_name, ios::binary);
     this->output_file.open(destination_file, ios::binary);
     this->pushToBuffer(4);
@@ -41,15 +41,15 @@ void FLACDECOMP::initialiseDecompression(string file_name, string destination_fi
     }
 }
 
-void FLACDECOMP::decompressWaveFile() {
+void FLAKDECOMP::decompressWaveFile() {
     printf("This was a wave file!\n");
 }
 
-void FLACDECOMP::decompressOtherFile() {
+void FLAKDECOMP::decompressOtherFile() {
     printf("This was not a wave file!\n");
 }
 
-int FLACCOMP::pushToBuffer(int n) {
+int FLAKDECOMP::pushToBuffer(int n) {
     for (int i = 0; i < n; i++) {
         if(this->buffer_end >= this->buffer_max_size){
             this->cleanBuffer();
@@ -67,6 +67,6 @@ int FLACCOMP::pushToBuffer(int n) {
     return 0;
 }
 
-void FLACDECOMP::cleanBuffer() {
+void FLAKDECOMP::cleanBuffer() {
     // Whoopsie :-/
 }

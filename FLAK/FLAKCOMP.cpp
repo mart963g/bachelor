@@ -1,24 +1,24 @@
-#include "FLAC.h"
+#include "FLAK.h"
 
 using namespace std;
 
 struct DataFrame<int16_t> frame;
 struct ErrorWrapper<int16_t> errors;
 
-void FLACCOMP::compressFile(string file_name) {
+void FLAKCOMP::compressFile(string file_name) {
     this->initialiseCompression(file_name, file_name);
     this->input_file.close();
     this->output_file.close();
 }
 
-void FLACCOMP::compressFile(string file_name, string destination_file) {
+void FLAKCOMP::compressFile(string file_name, string destination_file) {
     this->initialiseCompression(file_name, destination_file);
     this->input_file.close();
     this->output_file.close();
 }
 
 // Detect file type, and initialise compression accordingly
-void FLACCOMP::initialiseCompression(string file_name, string destination_file) {
+void FLAKCOMP::initialiseCompression(string file_name, string destination_file) {
     this->input_file.open(file_name, ios::binary);
     this->output_file.open(destination_file + ".flak", ios::binary);
     this->pushToBuffer(4);
@@ -36,7 +36,7 @@ void FLACCOMP::initialiseCompression(string file_name, string destination_file) 
     }
 }
 
-void FLACCOMP::compressWaveFile() {
+void FLAKCOMP::compressWaveFile() {
     this->fillOutHeader();
     this->output_file.write("FLAK", 4);
     this->writeWaveHeader();
@@ -53,11 +53,11 @@ void FLACCOMP::compressWaveFile() {
     this->processLastFrame(computed_samples);
 }
 
-void FLACCOMP::compressOtherFile() {
+void FLAKCOMP::compressOtherFile() {
     printf("This is not a wave file!\n");
 }
 
-void FLACCOMP::processLastFrame(int samples) {
+void FLAKCOMP::processLastFrame(int samples) {
     this->processLastSubFrame("left", samples);
 
     if (wave_header.NumChannels > 1) {
@@ -65,7 +65,7 @@ void FLACCOMP::processLastFrame(int samples) {
     }
 }
 
-void FLACCOMP::processLastSubFrame(string channel, int samples) {
+void FLAKCOMP::processLastSubFrame(string channel, int samples) {
     this->initialiseErrorArrays(channel);
     this->processErrors(channel);
     errors.sums[0] = errors.sums[1] = errors.sums[2] = errors.sums[3] = 0;
@@ -89,7 +89,7 @@ void FLACCOMP::processLastSubFrame(string channel, int samples) {
 
 /*  Load frame_sample_size samples in to the buffer,
     and fill out the frame struct */
-int FLACCOMP::fillOutFrame() {
+int FLAKCOMP::fillOutFrame() {
     int ret;
     for (int i = 0; i < this->frame_sample_size; i++) {
     // for (int i = 0; i < 2; i++) {
@@ -113,14 +113,14 @@ int FLACCOMP::fillOutFrame() {
     return 0;
 }
 
-void FLACCOMP::processFrame() {
+void FLAKCOMP::processFrame() {
     this->processSubFrame("left");
     if (wave_header.NumChannels > 1) {
         this->processSubFrame("right");
     }
 }
 
-void FLACCOMP::processSubFrame(string channel) {
+void FLAKCOMP::processSubFrame(string channel) {
     this->initialiseErrorArrays(channel);
     this->processErrors(channel);
     // printf("E0 error sum: %ld\n", errors.sums[0]);
@@ -143,7 +143,7 @@ void FLACCOMP::processSubFrame(string channel) {
 
 /*  Fills out the first three entries in each of the
     error arrays, since these are special cases */
-void FLACCOMP::initialiseErrorArrays(string channel) {
+void FLAKCOMP::initialiseErrorArrays(string channel) {
     // cout << "Initialising on channel " + channel + "\n";
     if (channel == "left") {
         for(int i = 0; i < 3; i++) {
@@ -167,7 +167,7 @@ void FLACCOMP::initialiseErrorArrays(string channel) {
 }
 
 // Fills out the error arrays, and calculates the error sums
-void FLACCOMP::processErrors(string channel) {
+void FLAKCOMP::processErrors(string channel) {
     if (channel == "left") {
         for (int i = 3; i < this->frame_sample_size; i++){
             errors.e0[i] = frame.left[i];
@@ -195,7 +195,7 @@ void FLACCOMP::processErrors(string channel) {
     
 }
 
-void FLACCOMP::writeSubFrameRaw(string channel, int order, int samples) {
+void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
     unsigned char write_channel = channel == "left" ? 0 : 1;
     unsigned char write_order = order;
     unsigned char k = 0;
@@ -238,11 +238,11 @@ void FLACCOMP::writeSubFrameRaw(string channel, int order, int samples) {
     
 }
 
-void FLACCOMP::writeWaveHeader() {
+void FLAKCOMP::writeWaveHeader() {
     this->output_file.write((char*)this->buffer.data(), 44);
 }
 
-int FLACCOMP::fillOutHeader() {
+int FLAKCOMP::fillOutHeader() {
     this->wave_header.FileSize = this->getLongFromLittleEndianBuffer(4);
     this->pushToBuffer(10);
     this->wave_header.AudioFormat = this->getShortFromLittleEndianBuffer(this->buffer_end-2);
@@ -274,20 +274,20 @@ int FLACCOMP::fillOutHeader() {
     return (int) this->input_file.eof(); 
 }
 
-uint16_t FLACCOMP::getShortFromLittleEndianBuffer(int start_index) {
+uint16_t FLAKCOMP::getShortFromLittleEndianBuffer(int start_index) {
     return (uint16_t) (this->buffer[start_index + 1] << 8) | this->buffer[start_index];
 }
 
-uint32_t FLACCOMP::getLongFromLittleEndianBuffer(int start_index) {
+uint32_t FLAKCOMP::getLongFromLittleEndianBuffer(int start_index) {
     return (uint32_t) (this->buffer[start_index + 3] << 24) | (this->buffer[start_index + 2] << 16) | 
         (this->buffer[start_index + 1] << 8) | this->buffer[start_index];
 }
 
-int16_t FLACCOMP::getSignedShortFromLittleEndianBuffer(int start_index) {
+int16_t FLAKCOMP::getSignedShortFromLittleEndianBuffer(int start_index) {
     return (int16_t) (this->buffer[start_index + 1] << 8) | this->buffer[start_index];
 }
 
-int FLACCOMP::pushToBuffer(int n) {
+int FLAKCOMP::pushToBuffer(int n) {
     for (int i = 0; i < n; i++) {
         if(this->buffer_end >= this->buffer_max_size){
             this->cleanBuffer();
@@ -305,7 +305,7 @@ int FLACCOMP::pushToBuffer(int n) {
     return 0;
 }
 
-void FLACCOMP::encodeResiduals(int order) {
+void FLAKCOMP::encodeResiduals(int order) {
     switch (order)
     {
     case 0:
@@ -325,7 +325,7 @@ void FLACCOMP::encodeResiduals(int order) {
     }
 }
 
-void FLACCOMP::writeSignedShortToFile(int16_t number) {
+void FLAKCOMP::writeSignedShortToFile(int16_t number) {
     unsigned char write = number & 255;
     // printf("First char: %u\n", write);
     this->output_file.put(write);
@@ -334,10 +334,10 @@ void FLACCOMP::writeSignedShortToFile(int16_t number) {
     this->output_file.put(write);
 }
 
-void FLACCOMP::setFrameSampleSize(int size) {
+void FLAKCOMP::setFrameSampleSize(int size) {
     this->frame_sample_size = size;
 }
 
-void FLACCOMP::cleanBuffer() {
+void FLAKCOMP::cleanBuffer() {
     // Hopefully at some point this will be implemented
 }
