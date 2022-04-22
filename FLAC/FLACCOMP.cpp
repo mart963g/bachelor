@@ -38,37 +38,79 @@ void FLACCOMP::initialiseCompression(string file_name, string destination_file) 
 
 void FLACCOMP::compressWaveFile() {
     this->fillOutHeader();
-    while(this->fillOutFrame() == 0) {
+    this->output_file.write("FLAK", 4);
+    this->writeWaveHeader();
+    int computed_samples = 0;
+    int count = 0;
+    while((computed_samples = this->fillOutFrame()) == 0) {
         // printf("Filled a whole frame!!\n");
         processFrame();
+        count++;
         // break;
     }
+    printf("Computed frames: %d\n", count);
+    printf("Computed Samples: %d\n", computed_samples);
+    this->processLastFrame(computed_samples);
 }
 
 void FLACCOMP::compressOtherFile() {
     printf("This is not a wave file!\n");
 }
 
+void FLACCOMP::processLastFrame(int samples) {
+    this->processLastSubFrame("left", samples);
+
+    if (wave_header.NumChannels > 1) {
+        this->processLastSubFrame("right", samples);
+    }
+}
+
+void FLACCOMP::processLastSubFrame(string channel, int samples) {
+    this->initialiseErrorArrays(channel);
+    this->processErrors(channel);
+    errors.sums[0] = errors.sums[1] = errors.sums[2] = errors.sums[3] = 0;
+    // Redo error sums, only including the actual samples from last frame
+    for (int i = 0; i < samples; i++) {
+        errors.sums[0] += abs(errors.e0[i]);
+        errors.sums[1] += abs(errors.e1[i]);
+        errors.sums[2] += abs(errors.e2[i]);
+        errors.sums[3] += abs(errors.e3[i]);
+    }
+    long lowest = errors.sums[0];
+    int index = 0;
+    for (int i = 1; i < 4; i++) {
+        if (errors.sums[i] < lowest) {
+            index = i;
+            lowest = errors.sums[i];
+        }
+    }
+    this->writeSubFrameRaw(channel, index, samples);
+}
+
 /*  Load frame_sample_size samples in to the buffer,
     and fill out the frame struct */
 int FLACCOMP::fillOutFrame() {
-    int ret = 0;
+    int ret;
     for (int i = 0; i < this->frame_sample_size; i++) {
     // for (int i = 0; i < 2; i++) {
         ret = this->pushToBuffer(this->sample_byte_depth);
-        if (ret != 0) break;
+        if (ret != 0) {
+            return (i == 0 ? -1 : i);
+        }
         // This function makes some assumptions, that breaks if the bit depth is not 16
         frame.left[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
 
         if (wave_header.NumChannels > 1) {
             ret = this->pushToBuffer(this->sample_byte_depth);
-            if (ret != 0) break;
+            if (ret != 0) {
+                return (i == 0 ? -1 : i);
+            }
             // This function makes some assumptions, that breaks if the bit depth is not 16
             frame.right[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
         }
     }
 
-    return ret;
+    return 0;
 }
 
 void FLACCOMP::processFrame() {
@@ -153,44 +195,43 @@ void FLACCOMP::processErrors(string channel) {
     
 }
 
-void FLACCOMP::writeSubFrameRaw(string channel, int order) {
-    this->writeWaveHeader();
+void FLACCOMP::writeSubFrameRaw(string channel, int order, int samples) {
     unsigned char write_channel = channel == "left" ? 0 : 1;
     unsigned char write_order = order;
     unsigned char k = 0;
     unsigned char write = (write_channel << 6) | (write_order << 4) | k;
-    printf("Header char: %u\n", write);
+    // printf("Header char: %u\n", write);
     this->output_file.put(write);
     for (int i = 0; i < order; i++) {
         if (channel == "left") {
-            printf("Error: %d\n", frame.left[i]);
+            // printf("Error: %d\n", frame.left[i]);
             this->writeSignedShortToFile(frame.left[i]);
         } else if (channel == "right"){
-            printf("Error: %d\n", frame.right[i]);
+            // printf("Error: %d\n", frame.right[i]);
             this->writeSignedShortToFile(frame.right[i]);
         }
     }
     // This doubled array is to avoid typing the whole class,
     // taking the generic template as a parameter in a function
-    int16_t error_array[frame_sample_size_const];
+    int16_t error_array[this->frame_sample_size];
     switch (order) {
         case 0:
-            copy_n(errors.e0, frame_sample_size_const, error_array);
+            copy_n(errors.e0, this->frame_sample_size, error_array);
             break;
         case 1:
-            copy_n(errors.e1, frame_sample_size_const, error_array);
+            copy_n(errors.e1, this->frame_sample_size, error_array);
             break;
         case 2:
-            copy_n(errors.e2, frame_sample_size_const, error_array);
+            copy_n(errors.e2, this->frame_sample_size, error_array);
             break;
         case 3:
-            copy_n(errors.e3, frame_sample_size_const, error_array);
+            copy_n(errors.e3, this->frame_sample_size, error_array);
             break;
         default:
             break;
     }
-    // for (int i = order; i < frame_sample_size_const; i++) {
-    for (int i = order; i < 10; i++) {
+    for (int i = order; i < samples; i++) {
+    // for (int i = order; i < 10; i++) {
         // printf("Error: %d\n", error_array[i]);
         this->writeSignedShortToFile(error_array[i]);
     }
@@ -198,7 +239,7 @@ void FLACCOMP::writeSubFrameRaw(string channel, int order) {
 }
 
 void FLACCOMP::writeWaveHeader() {
-    
+    this->output_file.write((char*)this->buffer.data(), 44);
 }
 
 int FLACCOMP::fillOutHeader() {

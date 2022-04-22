@@ -64,10 +64,12 @@ class FLACCOMP {
         void processErrors(string channel);
         void encodeResiduals(int order);
         int writeSubFrame(string channel);
-        void writeSubFrameRaw(string channel, int order);
+        void writeSubFrameRaw(string channel, int order, int samples = frame_sample_size_const);
         void writeSignedShortToFile(int16_t number);
         void cleanBuffer();
         void writeWaveHeader();
+        void processLastFrame(int samples);
+        void processLastSubFrame(string channel, int samples);
         uint16_t getShortFromLittleEndianBuffer(int start_index);
         uint32_t getLongFromLittleEndianBuffer(int start_index);
         int16_t getSignedShortFromLittleEndianBuffer(int start_index);
@@ -82,13 +84,19 @@ class FLACCOMP {
 class FLACDECOMP {
     private:
         struct waveHeader wave_header;
+        ifstream input_file;
+        ofstream output_file;
+        vector<unsigned char> buffer;
         int buffer_max_size = 2048;
+        int buffer_end = 0;
         int fillOutHeader();
         void initialiseDecompression(string file_name, string destination_file);
+        int pushToBuffer(int n = 1);
 
     public:
         void decompressFile(string file_name);
         void decompressFile(string file_name, string destination_file);
+        void setBufferMaxSize(int size);
 };
 
 
