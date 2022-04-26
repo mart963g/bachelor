@@ -1,4 +1,4 @@
-Use just mono sound, no additional channels.
+Made implementation for both mono and stereo but no more channels than 2.
 
 Make maybe just a single predictor, unless it does not take a lot of time.
 

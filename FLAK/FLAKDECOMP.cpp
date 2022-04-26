@@ -2,7 +2,9 @@
 
 using namespace std;
 
-struct DataFrame<int16_t> data_frame;
+struct DataFrame<int16_t> read_frame;
+struct DataFrame<int16_t> write_frame;
+struct ErrorWrapper<int16_t> error_struct;
 
 void FLAKDECOMP::decompressFile(string file_name) {
     this->initialiseDecompression(file_name, file_name);
@@ -46,7 +48,7 @@ void FLAKDECOMP::decompressWaveFile() {
     this->writeWaveHeader();
     int computed_samples = 0;
     while((computed_samples = this->readFrame()) == 0) {
-        this->processFrame();
+        this->writeFrame();
     }
 
 }
@@ -93,30 +95,17 @@ void FLAKDECOMP::writeWaveHeader() {
 }
 
 int FLAKDECOMP::readFrame() {
-    int ret;
-    for (int i = 0; i < this->frame_sample_size; i++) {
-    // for (int i = 0; i < 2; i++) {
-        ret = this->pushToBuffer(this->sample_byte_depth);
-        if (ret != 0) {
-            return (i == 0 ? -1 : i);
-        }
-        // This function makes some assumptions, that breaks if the bit depth is not 16
-        data_frame.left[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+    int ret = this->readSubFrame();
+    if (ret != 0) return ret;
 
-        if (wave_header.NumChannels > 1) {
-            ret = this->pushToBuffer(this->sample_byte_depth);
-            if (ret != 0) {
-                return (i == 0 ? -2 : i);
-            }
-            // This function makes some assumptions, that breaks if the bit depth is not 16
-            data_frame.right[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
-        }
+    if (this->wave_header.NumChannels > 1) {
+        ret = this->readSubFrame();
     }
 
-    return 0;
+    return ret;
 }
 
-void FLAKDECOMP::processFrame() {
+int FLAKDECOMP::readSubFrame() {
     this->pushToBuffer(1);
     unsigned char header_char = this->buffer[this->buffer_end - 1]; 
     unsigned char write_channel = (header_char & 192) >> 6;
@@ -125,8 +114,51 @@ void FLAKDECOMP::processFrame() {
     string channel = write_channel == 0 ? "left" : "right";
     printf("Header char: %u\t\t", header_char);
     cout << "Channel: " + channel;
-    printf("\tOrder: %u\tK: %u\n", channel, write_order, k);
+    printf("\tOrder: %u\tK: %u\n", write_order, k);
+    int ret = 0;
+    for (int i = 0; i < this->frame_sample_size; i++) {
+    // for (int i = 0; i < 2; i++) {
+        ret = this->pushToBuffer(this->sample_byte_depth);
+        if (ret != 0) {
+            return (i == 0 ? -1 : i);
+        }
+        // This function makes some assumptions, that breaks if the bit depth is not 16
+        if (write_channel == 0) {
+            read_frame.left[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+        } else {
+            read_frame.right[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+        }
+    }
+    this->processSubFrame(channel, write_order);
+
+    return ret;
 }
+
+void FLAKDECOMP::processSubFrame(string channel, int order, int samples) {
+    if (channel == "left") {
+        for (int i = 0; i < order; i++) {
+            error_struct.e0[i] = error_struct.e1[i] = error_struct.e2[i] = error_struct.e3[i] = read_frame.left[i];
+        }
+        
+    } else {
+        for (int i = 0; i < order; i++) {
+            error_struct.e0[i] = error_struct.e1[i] = error_struct.e2[i] = error_struct.e3[i] = read_frame.right[i];
+        }
+    }
+    // for (int i = order; i < samples; i++) {
+    //     error_struct.e0[i]
+    // }
+    
+}
+
+void FLAKDECOMP::processFrame() {
+    
+}
+
+void FLAKDECOMP::writeFrame() {
+
+}
+
 
 int FLAKDECOMP::pushToBuffer(int n) {
     for (int i = 0; i < n; i++) {
