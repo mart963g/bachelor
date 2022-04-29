@@ -18,9 +18,11 @@ The frame header also needs to display which order predictor was used (from 0 to
 
 
 FRAME HEADER FORMAT:
-<2> Shows which channel. 0 = left, 1 = right. In case of mono sound, this is always 0.
+<1> A flag set to 1, if this is one of the last frames, and it contains a different number of samples than the previous frames
+<1> Shows which channel. 0 = left, 1 = right. In case of mono sound, this is always 0.
 <2> Shows which predictor order was used. Number p from 0 to 3.
 <4> The golomb parameter k. For early testing purposes this is 0. 
+<0 || 16> If the first flag is set, then this is the number of samples in the frame (Little endian signed short). Otherwise this field is skipped
 <16*p> The first p samples, where p is the predictor order. (Little endian signed short)
 
 

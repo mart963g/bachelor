@@ -54,18 +54,24 @@ runForest: flak
 	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
 	@echo "Running forest test...\n"
 	@./Tests/Execs/flak forest.wav
-	# @echo "\nGenerating hex dump files..."
-	# @xxd Tests/Files/forest.wav > Tests/Files/forest.wav.trash
-	# @xxd Tests/Decompressed/forest.wav > Tests/Decompressed/forest.wav.trash
-	# @echo "Checking that forest files are identical..."
-	# @diff Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
-	# @rm Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
+	@echo "\nGenerating hex dump files..."
+	@xxd Tests/Files/forest.wav > Tests/Files/forest.wav.trash
+	@xxd Tests/Decompressed/forest.wav > Tests/Decompressed/forest.wav.trash
+	@echo "Checking that forest files are identical..."
+	@diff Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
+	@rm Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
 
 runSpeech: flak
 	@echo "Building speech test..."
 	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
 	@echo "Running speech test...\n"
 	@./Tests/Execs/flak speech.wav
+	@echo "\nGenerating hex dump files..."
+	@xxd Tests/Files/speech.wav > Tests/Files/speech.wav.trash
+	@xxd Tests/Decompressed/speech.wav > Tests/Decompressed/speech.wav.trash
+	@echo "Checking that speech files are identical..."
+	@diff Tests/Files/speech.wav.trash Tests/Decompressed/speech.wav.trash
+	@rm Tests/Files/speech.wav.trash Tests/Decompressed/speech.wav.trash
 	
 	
 #@echo "Sizes:"

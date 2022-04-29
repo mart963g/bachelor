@@ -199,18 +199,32 @@ void FLAKCOMP::processErrors(string channel) {
 
 void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
     unsigned char write_channel = channel == "left" ? 0 : 1;
+    // Sets the flag if samples is not the default number
+    unsigned char last_subframe_flag = samples == this->frame_sample_size ? 0 : 1; 
     unsigned char write_order = order;
     unsigned char k = 0;
-    unsigned char write = (write_channel << 6) | (write_order << 4) | k;
+    unsigned char write = (last_subframe_flag << 7) | (write_channel << 6) | (write_order << 4) | k;
     // printf("Header char: %u\n", write);
     this->output_file.put(write);
+    if (last_subframe_flag) {
+        int16_t write_samples = samples;
+        this->writeSignedShortToFile(write_samples);
+    }
     for (int i = 0; i < order; i++) {
         if (channel == "left") {
             // printf("Error: %d\n", frame.left[i]);
             this->writeSignedShortToFile(frame.left[i]);
+            // if (last_subframe_flag) {
+            //     printf("COMP: Sample number %d in last subframe is: %d\n", i, frame.left[i]);
+            //     printf("COMP: Real value is: %d\n", frame.left[i]);
+            // }
         } else if (channel == "right"){
             // printf("Error: %d\n", frame.right[i]);
             this->writeSignedShortToFile(frame.right[i]);
+            // if (last_subframe_flag) {
+            //     printf("COMP: Sample number %d in last subframe is: %d\n", i, frame.right[i]);
+            //     printf("COMP: Real value is: %d\n", frame.right[i]);
+            // }
         }
     }
     // This doubled array is to avoid typing the whole class,
@@ -233,9 +247,13 @@ void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
             break;
     }
     for (int i = order; i < samples; i++) {
-    // for (int i = order; i < 10; i++) {
         // printf("Error: %d\n", error_array[i]);
         this->writeSignedShortToFile(error_array[i]);
+        // if (i < 10 && last_subframe_flag) {
+        //     printf("COMP: Sample number %d in last subframe is: %d\n", i, error_array[i]);
+        //     printf("COMP: Real value is: %d\n", (channel == "left" ? frame.left[i] : frame.right[i]));
+        //     i++;
+        // }
     }
     
 }

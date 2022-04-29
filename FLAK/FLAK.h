@@ -103,8 +103,8 @@ class FLAKDECOMP {
         int readFrame();
         int readSubFrame();
         void writeFrame();
+        void writeSignedShortToFile(int16_t number);
         void processSubFrame(string channel, int order, int samples = frame_sample_size_const);
-        void processFrame();
         uint16_t getShortFromLittleEndianBuffer(int start_index);
         uint32_t getLongFromLittleEndianBuffer(int start_index);
         int16_t getSignedShortFromLittleEndianBuffer(int start_index);

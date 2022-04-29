@@ -50,7 +50,6 @@ void FLAKDECOMP::decompressWaveFile() {
     while((computed_samples = this->readFrame()) == 0) {
         this->writeFrame();
     }
-
 }
 
 void FLAKDECOMP::decompressOtherFile() {
@@ -108,15 +107,26 @@ int FLAKDECOMP::readFrame() {
 int FLAKDECOMP::readSubFrame() {
     this->pushToBuffer(1);
     unsigned char header_char = this->buffer[this->buffer_end - 1]; 
-    unsigned char write_channel = (header_char & 192) >> 6;
+    unsigned char write_channel = (header_char & 64) >> 6;
+    unsigned char last_subframe_flag = (header_char & 128) >> 7;
     unsigned char write_order = (header_char >> 4) & 3;
-    unsigned char k = header_char & 15;
+    // K is unused for now, and results in a warning if it is not commented out
+    // unsigned char k = header_char & 15;
     string channel = write_channel == 0 ? "left" : "right";
-    printf("Header char: %u\t\t", header_char);
-    cout << "Channel: " + channel;
-    printf("\tOrder: %u\tK: %u\n", write_order, k);
+    int sample_limit = this->frame_sample_size;
+    // printf("Header char: %u\t\tFlag: %u\n", header_char, last_subframe_flag);
+    if (last_subframe_flag) {
+        this->pushToBuffer(2);
+        sample_limit = this->getSignedShortFromLittleEndianBuffer(this->buffer_end-2);
+        // This is not pretty, but it is the fastest way to make writeFrame correct
+        this->frame_sample_size = sample_limit;
+        printf("Samples in last frame: %d\n", sample_limit);
+    }
+    // cout << "Channel: " + channel;
+    // printf("\tOrder: %u\tK: %u\n", write_order, k);
     int ret = 0;
-    for (int i = 0; i < this->frame_sample_size; i++) {
+    // int count = 0;
+    for (int i = 0; i < sample_limit; i++) {
     // for (int i = 0; i < 2; i++) {
         ret = this->pushToBuffer(this->sample_byte_depth);
         if (ret != 0) {
@@ -128,8 +138,13 @@ int FLAKDECOMP::readSubFrame() {
         } else {
             read_frame.right[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
         }
+        // This part below is just for testing!!!
+        // if (count < 10 && last_subframe_flag) {
+        //     printf("DECOMP: Sample number %d in last subframe is: %d\n", count, this->getSignedShortFromLittleEndianBuffer(this->buffer_end - 2));
+        //     count++;
+        // }
     }
-    this->processSubFrame(channel, write_order);
+    this->processSubFrame(channel, write_order, sample_limit);
 
     return ret;
 }
@@ -137,28 +152,93 @@ int FLAKDECOMP::readSubFrame() {
 void FLAKDECOMP::processSubFrame(string channel, int order, int samples) {
     if (channel == "left") {
         for (int i = 0; i < order; i++) {
-            error_struct.e0[i] = error_struct.e1[i] = error_struct.e2[i] = error_struct.e3[i] = read_frame.left[i];
+            write_frame.left[i] = read_frame.left[i];
+            if (samples != this->frame_sample_size) {
+                printf("DECOMP: Sample number %d in last subframe is: %d\n", i, write_frame.left[i]);
+                printf("DECOMP: Real value is (cheating): %d\n", write_frame.left[i]);
+            }
         }
         
     } else {
         for (int i = 0; i < order; i++) {
-            error_struct.e0[i] = error_struct.e1[i] = error_struct.e2[i] = error_struct.e3[i] = read_frame.right[i];
+           write_frame.right[i] = read_frame.right[i];
+            if (samples != this->frame_sample_size) {
+                printf("DECOMP: Sample number %d in last subframe is: %d\n", i, write_frame.right[i]);
+                printf("DECOMP: Real value is (cheating): %d\n", write_frame.right[i]);
+            }
         }
     }
-    // for (int i = order; i < samples; i++) {
-    //     error_struct.e0[i]
-    // }
-    
-}
+    for (int i = order; i < samples; i++) {
+        // Read residual, and store previous real values in placeholders for the prediction.
+        // This is done to avoid if statements with regards to the channel, inside the switch.
+        int16_t cur_error = 0;
+        int16_t result_1 = 0;
+        int16_t result_2 = 0;
+        int16_t result_3 = 0;
+        if (channel == "left") {
+            cur_error = read_frame.left[i];
+            if (order > 0) result_1 = write_frame.left[i-1];
+            if (order > 1) result_2 = write_frame.left[i-2];
+            if (order > 2) result_3 = write_frame.left[i-3];
+        } else {
+            cur_error = read_frame.right[i];
+            if (order > 0) result_1 = write_frame.right[i-1];
+            if (order > 1) result_2 = write_frame.right[i-2];
+            if (order > 2) result_3 = write_frame.right[i-3];
+        }
+        // This is an int, to avoid overflow in the calculations
+        // Might actually cause a problem in the conversion, we will see
+        int real_result = 0;
+        switch (order) {
+        case 0:
+            real_result = cur_error;
+            break;
+        
+        case 1:
+            real_result = result_1 + cur_error;
+            break;
+        
+        case 2:
+            real_result = 2*result_1 - result_2 + cur_error;
+            break;
 
-void FLAKDECOMP::processFrame() {
+        case 3:
+            real_result = 3*result_1 - 3*result_2 + result_3 + cur_error;
+            break;
+        
+        default:
+            printf("ERROR: Invalid order used in processing, order: %d\n", order);
+        }
+        if (channel == "left") {
+            write_frame.left[i] = (int16_t) real_result;
+        } else {
+            write_frame.right[i] = (int16_t) real_result;
+        }
+        if (samples != this->frame_sample_size && i < 10) {
+            printf("DECOMP: Sample number %d in last subframe is: %d\n", i, cur_error);
+            printf("DECOMP: Real value is: %d\n", real_result);
+        }
+    }
     
 }
 
 void FLAKDECOMP::writeFrame() {
-
+    for (int i = 0; i < this->frame_sample_size; i++) {
+        this->writeSignedShortToFile(write_frame.left[i]);
+        if (this->wave_header.NumChannels > 1) {
+            this->writeSignedShortToFile(write_frame.right[i]);
+        }
+    }
 }
 
+void FLAKDECOMP::writeSignedShortToFile(int16_t number) {
+    unsigned char write = number & 255;
+    // printf("First char: %u\n", write);
+    this->output_file.put(write);
+    write = (number >> 8) & 255;
+    // printf("Second char: %u\n", write);
+    this->output_file.put(write);
+}
 
 int FLAKDECOMP::pushToBuffer(int n) {
     for (int i = 0; i < n; i++) {
