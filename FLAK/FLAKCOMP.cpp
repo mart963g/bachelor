@@ -4,6 +4,7 @@ using namespace std;
 
 struct DataFrame<int16_t> frame;
 struct ErrorWrapper<int16_t> errors;
+char compression_different_sample_number_in_channels_flag = 0;
 
 void FLAKCOMP::compressFile(string file_name) {
     this->initialiseCompression(file_name, file_name);
@@ -60,7 +61,12 @@ void FLAKCOMP::compressOtherFile() {
 }
 
 void FLAKCOMP::processLastFrame(int samples) {
-    this->processLastSubFrame("left", samples);
+    // If the flag is set, there is an extra sample in the left subframe.
+    if (compression_different_sample_number_in_channels_flag) {
+        this->processLastSubFrame("left", samples + 1);
+    } else {
+        this->processLastSubFrame("left", samples);
+    }
 
     if (wave_header.NumChannels > 1) {
         this->processLastSubFrame("right", samples);
@@ -105,6 +111,10 @@ int FLAKCOMP::fillOutFrame() {
         if (wave_header.NumChannels > 1) {
             ret = this->pushToBuffer(this->sample_byte_depth);
             if (ret != 0) {
+                // Sets the flag, to signal that there were more samples in the first channel than in the second
+                compression_different_sample_number_in_channels_flag = 1;
+                printf("Different sample number in channels detected!\n");
+                printf("Last sample has value: %d\n", frame.left[i]);
                 return (i == 0 ? -2 : i);
             }
             // This function makes some assumptions, that breaks if the bit depth is not 16
@@ -209,6 +219,7 @@ void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
     if (last_subframe_flag) {
         int16_t write_samples = samples;
         this->writeSignedShortToFile(write_samples);
+        printf("Order: %d\n", order);
     }
     for (int i = 0; i < order; i++) {
         if (channel == "left") {
@@ -252,7 +263,6 @@ void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
         // if (i < 10 && last_subframe_flag) {
         //     printf("COMP: Sample number %d in last subframe is: %d\n", i, error_array[i]);
         //     printf("COMP: Real value is: %d\n", (channel == "left" ? frame.left[i] : frame.right[i]));
-        //     i++;
         // }
     }
     

@@ -6,6 +6,11 @@ struct DataFrame<int16_t> read_frame;
 struct DataFrame<int16_t> write_frame;
 struct ErrorWrapper<int16_t> error_struct;
 
+// This global integer is used to keep track of,
+// if there are more samples in the left channel
+// than in the right in the case of stereo sound
+int decompression_different_sample_number_in_channels_flag = 0;
+
 void FLAKDECOMP::decompressFile(string file_name) {
     this->initialiseDecompression(file_name, file_name);
     this->input_file.close();
@@ -119,6 +124,9 @@ int FLAKDECOMP::readSubFrame() {
         this->pushToBuffer(2);
         sample_limit = this->getSignedShortFromLittleEndianBuffer(this->buffer_end-2);
         // This is not pretty, but it is the fastest way to make writeFrame correct
+        if (sample_limit != this->frame_sample_size && this->frame_sample_size != frame_sample_size_const) {
+            decompression_different_sample_number_in_channels_flag = 1;
+        }
         this->frame_sample_size = sample_limit;
         printf("Samples in last frame: %d\n", sample_limit);
     }
@@ -228,6 +236,10 @@ void FLAKDECOMP::writeFrame() {
         if (this->wave_header.NumChannels > 1) {
             this->writeSignedShortToFile(write_frame.right[i]);
         }
+    }
+    // If there were one more sample in the left channel, write that as well
+    if (this->frame_sample_size != frame_sample_size_const && decompression_different_sample_number_in_channels_flag) {
+        this->writeSignedShortToFile(write_frame.left[this->frame_sample_size]);
     }
 }
 
