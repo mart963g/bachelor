@@ -12,6 +12,8 @@ hello: clean lz77 runHello
 
 forest: clean flak runForest
 
+speech: clean flak runSpeech
+
 lz77: LZ77COMP LZ77DECOMP
 
 flak: FLAKCOMP FLAKDECOMP
@@ -47,6 +49,14 @@ runHello:
 	@echo "Running hello test...\n"
 	@./Tests/Execs/run Hello.txt
 	@echo "\nChecking that hello files are identical..."
+	@diff Tests/Files/Hello.txt Tests/Decompressed/Hello.txt
+
+flakHello: flak
+	@echo "Building flak test..."
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
+	@echo "Running flak Hello.txt test...\n"
+	@./Tests/Execs/flak Hello.txt
+	@echo "Checking that hello files are identical..."
 	@diff Tests/Files/Hello.txt Tests/Decompressed/Hello.txt
 
 runForest: flak
@@ -98,4 +108,4 @@ sizes:
 
 clean:
 	@echo "Cleaning..."
-	@rm -f *.o */*.o */*/*.lzip */*.lzip */*/*.flak */*.flak Tests/Decompressed/* $(EXECS) 
+	@rm -f *.o */*.o */*/*.lzip */*.lzip */*/*.flak */*.flak Tests/Decompressed/* Tests/Compressed/* */*/*.trash $(EXECS) 

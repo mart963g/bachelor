@@ -59,6 +59,10 @@ void FLAKDECOMP::decompressWaveFile() {
 
 void FLAKDECOMP::decompressOtherFile() {
     printf("This was not a wave file!\n");
+    int computed_samples = 0;
+    while((computed_samples = this->readFrame()) == 0) {
+        this->writeFrame();
+    }
 }
 
 int FLAKDECOMP::fillOutHeader() {
@@ -142,9 +146,17 @@ int FLAKDECOMP::readSubFrame() {
         }
         // This function makes some assumptions, that breaks if the bit depth is not 16
         if (write_channel == 0) {
-            read_frame.left[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+            if (this->sample_byte_depth > 1) {
+                read_frame.left[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+            } else {
+                read_frame.left[i] = this->buffer[this->buffer_end-1];
+            }
         } else {
-            read_frame.right[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+            if (this->sample_byte_depth > 1) {
+                read_frame.right[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+            } else {
+                read_frame.right[i] = this->buffer[this->buffer_end-1];
+            }
         }
         // This part below is just for testing!!!
         // if (count < 10 && last_subframe_flag) {
@@ -161,19 +173,19 @@ void FLAKDECOMP::processSubFrame(string channel, int order, int samples) {
     if (channel == "left") {
         for (int i = 0; i < order; i++) {
             write_frame.left[i] = read_frame.left[i];
-            if (samples != this->frame_sample_size) {
-                printf("DECOMP: Sample number %d in last subframe is: %d\n", i, write_frame.left[i]);
-                printf("DECOMP: Real value is (cheating): %d\n", write_frame.left[i]);
-            }
+            // if (samples != this->frame_sample_size) {
+            //     printf("DECOMP: Sample number %d in last subframe is: %d\n", i, write_frame.left[i]);
+            //     printf("DECOMP: Real value is (cheating): %d\n", write_frame.left[i]);
+            // }
         }
         
     } else {
         for (int i = 0; i < order; i++) {
            write_frame.right[i] = read_frame.right[i];
-            if (samples != this->frame_sample_size) {
-                printf("DECOMP: Sample number %d in last subframe is: %d\n", i, write_frame.right[i]);
-                printf("DECOMP: Real value is (cheating): %d\n", write_frame.right[i]);
-            }
+            // if (samples != this->frame_sample_size) {
+            //     printf("DECOMP: Sample number %d in last subframe is: %d\n", i, write_frame.right[i]);
+            //     printf("DECOMP: Real value is (cheating): %d\n", write_frame.right[i]);
+            // }
         }
     }
     for (int i = order; i < samples; i++) {
@@ -222,24 +234,36 @@ void FLAKDECOMP::processSubFrame(string channel, int order, int samples) {
         } else {
             write_frame.right[i] = (int16_t) real_result;
         }
-        if (samples != this->frame_sample_size && i < 10) {
-            printf("DECOMP: Sample number %d in last subframe is: %d\n", i, cur_error);
-            printf("DECOMP: Real value is: %d\n", real_result);
-        }
+        // if (samples != this->frame_sample_size && i < 10) {
+        //     printf("DECOMP: Sample number %d in last subframe is: %d\n", i, cur_error);
+        //     printf("DECOMP: Real value is: %d\n", real_result);
+        // }
     }
     
 }
 
 void FLAKDECOMP::writeFrame() {
     for (int i = 0; i < this->frame_sample_size; i++) {
-        this->writeSignedShortToFile(write_frame.left[i]);
+        if (this->sample_byte_depth > 1) {
+            this->writeSignedShortToFile(write_frame.left[i]);
+        } else {
+            this->output_file.put((unsigned char) write_frame.left[i]);
+        }
         if (this->wave_header.NumChannels > 1) {
-            this->writeSignedShortToFile(write_frame.right[i]);
+            if (this->sample_byte_depth > 1) {
+                this->writeSignedShortToFile(write_frame.right[i]);
+            } else {
+                this->output_file.put((unsigned char) write_frame.right[i]);
+            }
         }
     }
     // If there were one more sample in the left channel, write that as well
     if (this->frame_sample_size != frame_sample_size_const && decompression_different_sample_number_in_channels_flag) {
-        this->writeSignedShortToFile(write_frame.left[this->frame_sample_size]);
+        if (this->sample_byte_depth > 1) {
+            this->writeSignedShortToFile(write_frame.left[this->frame_sample_size]);
+        } else {
+            this->output_file.put((unsigned char) write_frame.left[this->frame_sample_size]);
+        }
     }
 }
 

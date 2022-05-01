@@ -49,8 +49,8 @@ void FLAKCOMP::compressWaveFile() {
         count++;
         // break;
     }
-    printf("Computed frames: %d\n", count);
-    printf("Computed Samples: %d\n", computed_samples);
+    // printf("Computed frames: %d\n", count);
+    // printf("Computed Samples: %d\n", computed_samples);
     if (computed_samples > 0) {
         this->processLastFrame(computed_samples);
     }
@@ -58,6 +58,23 @@ void FLAKCOMP::compressWaveFile() {
 
 void FLAKCOMP::compressOtherFile() {
     printf("This is not a wave file!\n");
+    this->output_file.write("FLAK", 4);
+    int computed_samples = this->fillOutFirstFrameNonWave();
+    if (computed_samples == 0) {
+        this->processFrame();
+        // int count = 0;
+        while((computed_samples = this->fillOutFrame()) == 0) {
+            // printf("Filled a whole frame!!\n");
+            this->processFrame();
+            // count++;
+            // break;
+        }
+    }
+    // printf("Computed frames: %d\n", count);
+    // printf("Computed Samples: %d\n", computed_samples);
+    if (computed_samples > 0) {
+        this->processLastFrame(computed_samples);
+    }
 }
 
 void FLAKCOMP::processLastFrame(int samples) {
@@ -105,24 +122,51 @@ int FLAKCOMP::fillOutFrame() {
         if (ret != 0) {
             return (i == 0 ? -1 : i);
         }
-        // This function makes some assumptions, that breaks if the bit depth is not 16
-        frame.left[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+        if (this->sample_byte_depth > 1) {
+            frame.left[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+        } else {
+            frame.left[i] = this->buffer[this->buffer_end-1];
+        }
 
         if (wave_header.NumChannels > 1) {
             ret = this->pushToBuffer(this->sample_byte_depth);
             if (ret != 0) {
                 // Sets the flag, to signal that there were more samples in the first channel than in the second
                 compression_different_sample_number_in_channels_flag = 1;
-                printf("Different sample number in channels detected!\n");
-                printf("Last sample has value: %d\n", frame.left[i]);
+                // printf("Different sample number in channels detected!\n");
+                // printf("Last sample has value: %d\n", frame.left[i]);
                 return (i == 0 ? -2 : i);
             }
-            // This function makes some assumptions, that breaks if the bit depth is not 16
-            frame.right[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+            if (this->sample_byte_depth > 1) {
+                frame.right[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
+            } else {
+                frame.right[i] = this->buffer[this->buffer_end-1];
+            }
         }
     }
 
-    return 0;
+    return ret;
+}
+
+// Fills out the frame the first time, if the file being compressed is not a WAVE file.
+// Assumes that the sample bit depth is 8.
+int FLAKCOMP::fillOutFirstFrameNonWave() {
+    int start_size = this->buffer.size();
+    // Initialise frame with bytes already in the buffer
+    for (int i = 0; i < start_size; i++) {
+        frame.left[i] = this->buffer[i];
+    }
+    
+    int ret = 0;
+    // Fill out the rest of the trame
+    for (int i = start_size; i < this->frame_sample_size; i++) {
+        ret = this->pushToBuffer(this->sample_byte_depth);
+        if (ret != 0) {
+            return (i == 0 ? -1 : i);
+        }
+        frame.left[i] = this->buffer[this->buffer_end-1];
+    }
+    return ret;
 }
 
 void FLAKCOMP::processFrame() {
@@ -215,26 +259,35 @@ void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
     unsigned char k = 0;
     unsigned char write = (last_subframe_flag << 7) | (write_channel << 6) | (write_order << 4) | k;
     // printf("Header char: %u\n", write);
+
     this->output_file.put(write);
     if (last_subframe_flag) {
         int16_t write_samples = samples;
         this->writeSignedShortToFile(write_samples);
-        printf("Order: %d\n", order);
+        // printf("Order: %d\n", order);
     }
     for (int i = 0; i < order; i++) {
         if (channel == "left") {
             // printf("Error: %d\n", frame.left[i]);
-            this->writeSignedShortToFile(frame.left[i]);
+            if (this->sample_byte_depth > 1) {
+                this->writeSignedShortToFile(frame.left[i]);
+            } else {
+                this->output_file.put((char) frame.left[i]);
+            }
             // if (last_subframe_flag) {
-            //     printf("COMP: Sample number %d in last subframe is: %d\n", i, frame.left[i]);
-            //     printf("COMP: Real value is: %d\n", frame.left[i]);
+                // printf("COMP: Sample number %d in last subframe is: %d\n", i, frame.left[i]);
+                // printf("COMP: Real value is: %d\n", frame.left[i]);
             // }
         } else if (channel == "right"){
             // printf("Error: %d\n", frame.right[i]);
-            this->writeSignedShortToFile(frame.right[i]);
+            if (this->sample_byte_depth > 1) {
+                this->writeSignedShortToFile(frame.right[i]);
+            } else {
+                this->output_file.put((char) frame.right[i]);
+            }
             // if (last_subframe_flag) {
-            //     printf("COMP: Sample number %d in last subframe is: %d\n", i, frame.right[i]);
-            //     printf("COMP: Real value is: %d\n", frame.right[i]);
+                // printf("COMP: Sample number %d in last subframe is: %d\n", i, frame.right[i]);
+                // printf("COMP: Real value is: %d\n", frame.right[i]);
             // }
         }
     }
@@ -259,10 +312,14 @@ void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
     }
     for (int i = order; i < samples; i++) {
         // printf("Error: %d\n", error_array[i]);
-        this->writeSignedShortToFile(error_array[i]);
+        if (this->sample_byte_depth > 1) {
+            this->writeSignedShortToFile(error_array[i]);
+        } else {
+            this->output_file.put((char) error_array[i]);
+        }
         // if (i < 10 && last_subframe_flag) {
-        //     printf("COMP: Sample number %d in last subframe is: %d\n", i, error_array[i]);
-        //     printf("COMP: Real value is: %d\n", (channel == "left" ? frame.left[i] : frame.right[i]));
+            // printf("COMP: Sample number %d in last subframe is: %d\n", i, error_array[i]);
+            // printf("COMP: Real value is: %d\n", (channel == "left" ? frame.left[i] : frame.right[i]));
         // }
     }
     

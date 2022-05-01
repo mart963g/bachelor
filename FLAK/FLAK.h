@@ -49,7 +49,7 @@ class FLAKCOMP {
         struct waveHeader wave_header;
         int buffer_max_size = 2048;
         int frame_sample_size = frame_sample_size_const;
-        int sample_byte_depth = 2;
+        int sample_byte_depth = 1;
         vector<unsigned char> buffer;
         ifstream input_file;
         ofstream output_file;
@@ -60,6 +60,7 @@ class FLAKCOMP {
         int pushToBuffer(int n = 1);
         int fillOutHeader();
         int fillOutFrame();
+        int fillOutFirstFrameNonWave();
         void processFrame();
         void processSubFrame(string channel);
         void initialiseErrorArrays(string channel);
@@ -92,7 +93,7 @@ class FLAKDECOMP {
         int buffer_max_size = 2048;
         int buffer_end = 0;
         int frame_sample_size = frame_sample_size_const;
-        int sample_byte_depth = 2;
+        int sample_byte_depth = 1;
         void initialiseDecompression(string file_name, string destination_file);
         int pushToBuffer(int n = 1);
         void cleanBuffer();
