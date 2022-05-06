@@ -57,7 +57,7 @@ void FLAKCOMP::compressWaveFile() {
 }
 
 void FLAKCOMP::compressOtherFile() {
-    printf("This is not a wave file!\n");
+    // printf("This is not a wave file!\n");
     this->output_file.write("FLAK", 4);
     int computed_samples = this->fillOutFirstFrameNonWave();
     if (computed_samples == 0) {
@@ -274,9 +274,9 @@ void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
             } else {
                 this->output_file.put((char) frame.left[i]);
             }
-            // if (last_subframe_flag) {
-                // printf("COMP: Sample number %d in last subframe is: %d\n", i, frame.left[i]);
-                // printf("COMP: Real value is: %d\n", frame.left[i]);
+            // if (i < 20 && this->buffer.size() < 1000) {
+            //     printf("COMP: Sample number %d in last subframe is: %d\n", i, frame.left[i]);
+            //     printf("COMP: Real value is: %d\n", frame.left[i]);
             // }
         } else if (channel == "right"){
             // printf("Error: %d\n", frame.right[i]);
@@ -317,9 +317,9 @@ void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
         } else {
             this->output_file.put((char) error_array[i]);
         }
-        // if (i < 10 && last_subframe_flag) {
-            // printf("COMP: Sample number %d in last subframe is: %d\n", i, error_array[i]);
-            // printf("COMP: Real value is: %d\n", (channel == "left" ? frame.left[i] : frame.right[i]));
+        // if (i < 20 && this->buffer.size() < 1000) {
+        //     printf("COMP: Sample number %d in last subframe is: %d\n", i, error_array[i]);
+        //     printf("COMP: Real value is: %d\n", (channel == "left" ? frame.left[i] : frame.right[i]));
         // }
     }
     

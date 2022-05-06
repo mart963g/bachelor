@@ -99,6 +99,7 @@ class FLAKDECOMP {
         void cleanBuffer();
         void decompressWaveFile();
         void decompressOtherFile();
+        int readFirstFrameNonWaveFile(int buffer_size);
         int fillOutHeader();
         void writeWaveHeader();
         int readFrame();

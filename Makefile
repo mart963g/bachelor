@@ -1,12 +1,12 @@
 CC = g++
 CFLAGS = -Wall -g -ggdb
 EXECS = Tests/Execs/run Tests/Execs/flak
-TESTS = Hello.txt shakespeare.txt Tester.png forest.wav speech.wav
+TESTS = Hello.txt shakespeare.txt Tester.png speech.wav forest.wav
 TEXT_FILES = Hello.txt shakespeare.txt
-NON_TEXT_FILES = Tester.png forest.wav speech.wav
+NON_TEXT_FILES = Tester.png speech.wav forest.wav
 DIFF_TEXT = Tests/Files/$(file).trash Tests/Decompressed/$(file).trash
 
-all: clean lz77 flak tests runTests diff
+all: clean lz77 flak tests runLZ77 diff cleanFiles runFlak secondDiff
 
 hello: clean lz77 runHello
 
@@ -17,6 +17,8 @@ speech: clean flak runSpeech
 lz77: LZ77COMP LZ77DECOMP
 
 flak: FLAKCOMP FLAKDECOMP
+
+flakTests: clean flak flakTest runFlak diff
 
 LZ77COMP: LZ77/LZ77COMP.cpp
 	@echo "Building LZ77 compresion..."
@@ -39,9 +41,13 @@ tests: Tests/Execs/run.cpp Tests/Execs/flak.cpp lz77 flak
 	@$(CC) $(CFLAGS) -o Tests/Execs/run LZ77/LZ77COMP.o LZ77/LZ77DECOMP.o Tests/Execs/run.cpp -I LZ77
 	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
 
-runTests: tests
-	@echo "Running tests...\n"
-	@$(foreach exec,$(EXECS), ./$(exec) ${TESTS}; )
+flakTest: Tests/Execs/flak.cpp flak
+	@echo "Building Test..."
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
+
+runLZ77: lz77 tests
+	@echo "Running tests LZ77...\n"
+	@./Tests/Execs/run ${TESTS}
 
 runHello:
 	@echo "Building Hello test..."
@@ -58,6 +64,22 @@ flakHello: flak
 	@./Tests/Execs/flak Hello.txt
 	@echo "Checking that hello files are identical..."
 	@diff Tests/Files/Hello.txt Tests/Decompressed/Hello.txt
+
+flakShakespeare: flak
+	@echo "Building flak test..."
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
+	@echo "Running flak shakespeare.txt test...\n"
+	@./Tests/Execs/flak shakespeare.txt
+	@echo "\nChecking that shakespeare files are identical..."
+	@diff Tests/Files/shakespeare.txt Tests/Decompressed/shakespeare.txt
+
+flakPng: flak
+	@echo "Building flak test..."
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
+	@echo "Running flak PNG test...\n"
+	@./Tests/Execs/flak Tester.png
+	@echo "\nChecking that PNG files are identical..."
+	@diff Tests/Files/Tester.png Tests/Decompressed/Tester.png
 
 runForest: flak
 	@echo "Building forest test..."
@@ -87,9 +109,7 @@ runSpeech: flak
 #@echo "Sizes:"
 #@ls -l Tests/Files/speech.wav Tests/Compressed/speech.wav.flak
 	
-
 runFlak: flak
-	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o Tests/Execs/flak.cpp -I FLAK
 	@echo "Running tests FLAK...\n"
 	@./Tests/Execs/flak ${TESTS}
 
@@ -102,10 +122,23 @@ diff:
 	@$(foreach file,$(NON_TEXT_FILES), echo "Checking $(file)..." && diff $(DIFF_TEXT);)
 	@rm -f */*/*.trash 
 
+secondDiff:
+	@echo "\nChecking that text files are identical..."
+	@$(foreach file,$(TEXT_FILES), echo Checking $(file)... && diff Tests/Files/$(file) Tests/Decompressed/$(file); )
+	@echo "\nGenerating non text file hex dumps..."
+	@$(foreach file,$(NON_TEXT_FILES), xxd Tests/Files/$(file) > Tests/Files/$(file).trash; xxd Tests/Decompressed/$(file) > Tests/Decompressed/$(file).trash;)
+	@echo "Checking that non text files are identical..."
+	@$(foreach file,$(NON_TEXT_FILES), echo "Checking $(file)..." && diff $(DIFF_TEXT);)
+	@rm -f */*/*.trash 
+
 sizes:
 	@echo "Sizes of original and decompressed files:\n"
-	@$(foreach file, $(TESTS), ls -l Tests/Files/$(file) Tests/Compressed/$(file).lzip;)
+	@$(foreach file, $(TESTS), ls -l Tests/Files/$(file) Tests/Compressed/$(file).flak Tests/Decompressed/$(file);)
 
 clean:
 	@echo "Cleaning..."
 	@rm -f *.o */*.o */*/*.lzip */*.lzip */*/*.flak */*.flak Tests/Decompressed/* Tests/Compressed/* */*/*.trash $(EXECS) 
+
+cleanFiles:
+	@echo "Cleaning compressed files..."
+	@rm Tests/Decompressed/* Tests/Compressed/*

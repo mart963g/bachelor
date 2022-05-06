@@ -6,6 +6,9 @@ struct DataFrame<int16_t> read_frame;
 struct DataFrame<int16_t> write_frame;
 struct ErrorWrapper<int16_t> error_struct;
 
+// JUST FOR TESTING!!
+int global_count = 0;
+
 // This global integer is used to keep track of,
 // if there are more samples in the left channel
 // than in the right in the case of stereo sound
@@ -48,7 +51,7 @@ void FLAKDECOMP::initialiseDecompression(string file_name, string destination_fi
 }
 
 void FLAKDECOMP::decompressWaveFile() {
-    printf("This was a wave file!\n");
+    // printf("This was a wave file!\n");
     this->fillOutHeader();
     this->writeWaveHeader();
     int computed_samples = 0;
@@ -58,8 +61,9 @@ void FLAKDECOMP::decompressWaveFile() {
 }
 
 void FLAKDECOMP::decompressOtherFile() {
-    printf("This was not a wave file!\n");
-    int computed_samples = 0;
+    // printf("This was not a wave file!\n");
+    int computed_samples = this->readFirstFrameNonWaveFile(this->buffer.size());
+    this->writeFrame();
     while((computed_samples = this->readFrame()) == 0) {
         this->writeFrame();
     }
@@ -114,7 +118,9 @@ int FLAKDECOMP::readFrame() {
 }
 
 int FLAKDECOMP::readSubFrame() {
-    this->pushToBuffer(1);
+    if (this->pushToBuffer(1) != 0) {
+        return -1;
+    }
     unsigned char header_char = this->buffer[this->buffer_end - 1]; 
     unsigned char write_channel = (header_char & 64) >> 6;
     unsigned char last_subframe_flag = (header_char & 128) >> 7;
@@ -123,7 +129,9 @@ int FLAKDECOMP::readSubFrame() {
     // unsigned char k = header_char & 15;
     string channel = write_channel == 0 ? "left" : "right";
     int sample_limit = this->frame_sample_size;
-    // printf("Header char: %u\t\tFlag: %u\n", header_char, last_subframe_flag);
+    // if (global_count > 24) {
+        // printf("Header char: %u\t\tFlag: %u\t\tOrder: %u\t\tChannel: %s\n", header_char, last_subframe_flag, write_order, (write_channel == 0 ? "left" : "right"));
+    // }
     if (last_subframe_flag) {
         this->pushToBuffer(2);
         sample_limit = this->getSignedShortFromLittleEndianBuffer(this->buffer_end-2);
@@ -132,7 +140,7 @@ int FLAKDECOMP::readSubFrame() {
             decompression_different_sample_number_in_channels_flag = 1;
         }
         this->frame_sample_size = sample_limit;
-        printf("Samples in last frame: %d\n", sample_limit);
+        // printf("Samples in last frame: %d\n", sample_limit);
     }
     // cout << "Channel: " + channel;
     // printf("\tOrder: %u\tK: %u\n", write_order, k);
@@ -173,7 +181,7 @@ void FLAKDECOMP::processSubFrame(string channel, int order, int samples) {
     if (channel == "left") {
         for (int i = 0; i < order; i++) {
             write_frame.left[i] = read_frame.left[i];
-            // if (samples != this->frame_sample_size) {
+            // if (this->buffer.size() < 1000) {
             //     printf("DECOMP: Sample number %d in last subframe is: %d\n", i, write_frame.left[i]);
             //     printf("DECOMP: Real value is (cheating): %d\n", write_frame.left[i]);
             // }
@@ -234,10 +242,6 @@ void FLAKDECOMP::processSubFrame(string channel, int order, int samples) {
         } else {
             write_frame.right[i] = (int16_t) real_result;
         }
-        // if (samples != this->frame_sample_size && i < 10) {
-        //     printf("DECOMP: Sample number %d in last subframe is: %d\n", i, cur_error);
-        //     printf("DECOMP: Real value is: %d\n", real_result);
-        // }
     }
     
 }
@@ -265,6 +269,47 @@ void FLAKDECOMP::writeFrame() {
             this->output_file.put((unsigned char) write_frame.left[this->frame_sample_size]);
         }
     }
+}
+
+int FLAKDECOMP::readFirstFrameNonWaveFile(int buffer_size) {
+    unsigned char header_char = this->buffer[4]; 
+    unsigned char write_channel = (header_char & 64) >> 6;
+    unsigned char last_subframe_flag = (header_char & 128) >> 7;
+    unsigned char write_order = (header_char >> 4) & 3;
+
+    int start = 5;
+    string channel = write_channel == 0 ? "left" : "right";
+    int sample_limit = this->frame_sample_size;
+    // printf("Header char: %u\t\tFlag: %u\n", header_char, last_subframe_flag);
+    if (last_subframe_flag) {
+        start = 7;
+        sample_limit = this->getSignedShortFromLittleEndianBuffer(5);
+        // This is not pretty, but it is the fastest way to make writeFrame correct
+        if (sample_limit != this->frame_sample_size && this->frame_sample_size != frame_sample_size_const) {
+            decompression_different_sample_number_in_channels_flag = 1;
+        }
+        this->frame_sample_size = sample_limit;
+        // printf("Samples in last frame: %d\n", sample_limit);
+    }
+
+    int ret = 0;
+    for (int i = start; i < (sample_limit + start); i++) {
+        // Only adds to the buffer if the current data is not yet read.
+        // This line is the whole reason for the separate function.
+        if (i >= buffer_size) {
+            ret = this->pushToBuffer(this->sample_byte_depth);
+            if (ret != 0) {
+                return (i == 0 ? -1 : i);
+            }
+            // Non wave files are always encoded with mono sound 8-bits for simplicity.
+            read_frame.left[i-start] = this->buffer[this->buffer_end-1];
+        } else {
+            read_frame.left[i-start] = this->buffer[i];
+        }
+    }
+    this->processSubFrame(channel, write_order, sample_limit);
+
+    return ret;
 }
 
 void FLAKDECOMP::writeSignedShortToFile(int16_t number) {
