@@ -4,15 +4,16 @@ template<typename I>
 void RICECODER<I>::encodeFrame(I samples_array[], ofstream output_file, int num_of_samples, int m) {
     this->output_file = output_file;
     for (int i = 0; i < num_of_samples; i++) {
-        int32_t temp = this->getMappedNumber(samples_array[i]);
-        // for i=0 < m 
-        //     WRITE temp | 1
-        //     temp = temp >> 1
-        // for i=0 < temp
-        //     WRITE 0
-        // WRITE 1      
-        /* First the m lowest bits of temp are written. The remaining unused bits
+        int32_t temp = samples_array[i];   
+        /* First the sign bit is written (1 = -, 0 = +).
+           Then the m lowest bits of the posotive value of temp are written. The remaining unused bits
            represent the number N. Then N 0's are written, followed by a 1. */
+        if (temp < 0) {
+            this->writeBit(1);
+            temp = temp*-1;
+        } else {
+            this->writeBit(0);
+        }
         for (size_t i = 0; i < m; i++) {
             this->writeBit(temp | 1);
             temp = temp >> 1;
@@ -45,19 +46,4 @@ void RICECODER<I>::writeBytePadding() {
         this->write_bitbuffer = (this->write_bitbuffer << (8-this->written_bits));
         this->output_file.write(this->write_bitbuffer);
     }
-}
-
-template<>
-int32_t RICECODER<int16_t>::getMappedNumber(int16_t number) {
-    int32_t temp = number;
-    // This is a mapping from signed integers, to unsigned integers, since RICE
-    // coding doesn't work for negative numbers
-    temp = temp < 0 ? (-2*temp - 1) : (2*temp);
-    return temp;
-}
-
-template<>
-int32_t RICECODER<unsigned char>::getMappedNumber(unsigned char number) {
-    int32_t temp = number;
-    return temp;
 }
