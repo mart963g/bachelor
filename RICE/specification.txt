@@ -1,0 +1,4 @@
+I have used a combination of the algorithm from wikipedia and from AUDIOPAK.
+I have used the mapping from signed integers, to unsigned integers from wikipedia, and thereby skipped the sign bit,
+from the AUDIOPAK implementation.
+The rest follows the AUDIOPAK implementation precisely.
