@@ -23,8 +23,8 @@ class RICECODER {
         void writeBytePadding();
     
     public:
-        void encodeFrame(I samples_array[], ofstream output_file, int num_of_samples, int m);
-        void decodeFrame(I &samples_array[], ifstream input_file, int num_of_samples, int m);
+        void encodeSubFrame(I samples_array[], ofstream output_file, int num_of_samples, int m);
+        void decodeSubFrame(I samples_array[], ifstream input_file, int num_of_samples, int m);
 };
 
 #endif

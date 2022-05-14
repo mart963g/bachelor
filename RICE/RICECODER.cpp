@@ -1,7 +1,7 @@
 #include "RICE.h"
 
 template<typename I>
-void RICECODER<I>::encodeFrame(I samples_array[], ofstream output_file, int num_of_samples, int m) {
+void RICECODER<I>::encodeSubFrame(I samples_array[], ofstream output_file, int num_of_samples, int m) {
     this->output_file = output_file;
     for (int i = 0; i < num_of_samples; i++) {
         int32_t temp = samples_array[i];   
