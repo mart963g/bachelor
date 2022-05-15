@@ -12,14 +12,16 @@ template<typename I>
 class RICECODER {
     private:
         ofstream* output_file;
-        ifstream input_file;
+        ifstream* input_file;
         unsigned char write_bitbuffer = 0;
         unsigned char read_bitbuffer = 0;
         int written_bits = 0;
         int read_bits = 0;
         int32_t getMappedNumber(I number);
+        I getRiceEncodedSample(int m);
         void writeBytePadding();
         void writeBit(char bit);
+        char readBit();
     
     public:
         void encodeSubFrame(I samples_array[], ofstream* output_file, int num_of_samples, int m);
