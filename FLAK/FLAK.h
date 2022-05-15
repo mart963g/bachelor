@@ -1,12 +1,13 @@
 #ifndef FLAK_H
 #define FLAK_H
+#include "../RICE/RICE.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <string.h>
-#include <netinet/in.h>
+#include <bits/stdc++.h>
 
 using namespace std;
 
@@ -46,6 +47,7 @@ struct ErrorWrapper {
 
 class FLAKCOMP {
     private:
+        RICECODER<int16_t> rice_16;
         struct waveHeader wave_header;
         int buffer_max_size = 2048;
         int frame_sample_size = frame_sample_size_const;
@@ -65,8 +67,9 @@ class FLAKCOMP {
         void processSubFrame(string channel);
         void initialiseErrorArrays(string channel);
         void processErrors(string channel);
-        void encodeResiduals(int order);
+        void writeSubFrameResiduals(string channel, int order, int samples = frame_sample_size_const);
         int writeSubFrame(string channel);
+        void writeSubFrameHeader(string channel, int order, int samples = frame_sample_size_const);
         void writeSubFrameRaw(string channel, int order, int samples = frame_sample_size_const);
         void writeSignedShortToFile(int16_t number);
         void cleanBuffer();

@@ -192,9 +192,9 @@ void FLAKCOMP::processSubFrame(string channel) {
         }
     }
     // printf("Lowest error is order: %d with error: %ld\n", index, lowest);
-    this->writeSubFrameRaw(channel, index);
+    this->writeSubFrameHeader(channel, index);
     // Commented out for now
-    // this->encodeResiduals(index);
+    this->writeSubFrameResiduals(channel, index);
 }
 
 /*  Fills out the first three entries in each of the
@@ -249,6 +249,36 @@ void FLAKCOMP::processErrors(string channel) {
         errors.sums[3] += abs(errors.e3[i]);
     }
     
+}
+
+void FLAKCOMP::writeSubFrameHeader(string channel, int order, int samples) {
+    unsigned char write_channel = channel == "left" ? 0 : 1;
+    // Sets the flag if samples is not the default number
+    unsigned char last_subframe_flag = samples == this->frame_sample_size ? 0 : 1; 
+    unsigned char write_order = order;
+    unsigned char k = 0;
+    unsigned char write = (last_subframe_flag << 7) | (write_channel << 6) | (write_order << 4) | k;
+
+    this->output_file.put(write);
+    if (last_subframe_flag) {
+        int16_t write_samples = samples;
+        this->writeSignedShortToFile(write_samples);
+    }
+    for (int i = 0; i < order; i++) {
+        if (channel == "left") {
+            if (this->sample_byte_depth > 1) {
+                this->writeSignedShortToFile(frame.left[i]);
+            } else {
+                this->output_file.put((char) frame.left[i]);
+            }
+        } else if (channel == "right"){
+            if (this->sample_byte_depth > 1) {
+                this->writeSignedShortToFile(frame.right[i]);
+            } else {
+                this->output_file.put((char) frame.right[i]);
+            }
+        }
+    }
 }
 
 void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
@@ -392,24 +422,29 @@ int FLAKCOMP::pushToBuffer(int n) {
     return 0;
 }
 
-void FLAKCOMP::encodeResiduals(int order) {
-    switch (order)
-    {
-    case 0:
-        /* code */
-        break;
-    case 1:
-        break;
-    
-    case 2:
-        break;
-    
-    case 3:
-        break;
-
-    default:
-        cout << "Error: Invalid predicter chosen!\n";
+void FLAKCOMP::writeSubFrameResiduals(string channel, int order, int samples) {
+    int residual_samples = samples - order;
+    int16_t error_array[residual_samples];
+    switch (order) {
+        case 0:
+            copy_n(errors.e0 + order, residual_samples, error_array);
+            break;
+        case 1:
+            copy_n(errors.e1 + order, residual_samples, error_array);
+            break;
+        case 2:
+            copy_n(errors.e2 + order, residual_samples, error_array);
+            break;
+        case 3:
+            copy_n(errors.e3 + order, residual_samples, error_array);
+            break;
+        default:
+            break;
     }
+    // The log_2 of (log_e(2) multiplied with the expected value of (absolute value of) the error)
+    int m = log2(log(2) * (errors.sums[order]/residual_samples));
+    printf("M is: %d\n", m);
+    this->rice_16.encodeSubFrame(error_array, &this->output_file, residual_samples, m);
 }
 
 void FLAKCOMP::writeSignedShortToFile(int16_t number) {
