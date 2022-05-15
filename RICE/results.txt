@@ -1,0 +1,7 @@
+Speech
+Tests/Files/speech.wav                  97530
+Tests/Compressed/speech.wav.flak        83366
+
+Forest
+Tests/Files/forest.wav               10437190
+Tests/Compressed/forest.wav.flak     12110765
