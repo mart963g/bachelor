@@ -1,9 +1,9 @@
 CC = g++
 CFLAGS = -Wall -g -ggdb
 EXECS = Tests/Execs/run Tests/Execs/flak
-TESTS = Hello.txt shakespeare.txt Tester.png speech.wav forest.wav
+TESTS = Hello.txt shakespeare.txt Tester.png speech.wav forest.wav guitar.wav
 TEXT_FILES = Hello.txt shakespeare.txt
-NON_TEXT_FILES = Tester.png speech.wav forest.wav
+NON_TEXT_FILES = Tester.png speech.wav forest.wav guitar.wav
 DIFF_TEXT = Tests/Files/$(file).trash Tests/Decompressed/$(file).trash
 
 all: clean lz77 flak tests runLZ77 diff cleanFiles runFlak secondDiff
@@ -44,11 +44,11 @@ RICECODER:	RICE/RICECODER.cpp
 tests: Tests/Execs/run.cpp Tests/Execs/flak.cpp lz77 flak
 	@echo "Building Tests..."
 	@$(CC) $(CFLAGS) -o Tests/Execs/run LZ77/LZ77COMP.o LZ77/LZ77DECOMP.o Tests/Execs/run.cpp -I LZ77
-	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK -I RICE
 
 flakTest: Tests/Execs/flak.cpp flak
 	@echo "Building Test..."
-	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK -I RICE
 
 runLZ77: lz77 tests
 	@echo "Running tests LZ77...\n"
@@ -99,12 +99,38 @@ runForest: flak
 	# @diff Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
 	# @rm Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
 
+runPiano: flak
+	@echo "Building piano test..."
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK -I RICE
+	@echo "Running piano test...\n"
+	@./Tests/Execs/flak piano.wav
+	@ ls -l Tests/Files/piano.wav Tests/Compressed/piano.wav.flak
+	# @echo "\nGenerating hex dump files..."
+	# @xxd Tests/Files/piano.wav > Tests/Files/piano.wav.trash
+	# @xxd Tests/Decompressed/piano.wav > Tests/Decompressed/piano.wav.trash
+	# @echo "Checking that piano files are identical..."
+	# @diff Tests/Files/piano.wav.trash Tests/Decompressed/piano.wav.trash
+	# @rm Tests/Files/piano.wav.trash Tests/Decompressed/piano.wav.trash
+
+runGuitar: flak
+	@echo "Building guitar test..."
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK -I RICE
+	@echo "Running guitar test...\n"
+	@./Tests/Execs/flak guitar.wav
+	@ ls -l Tests/Files/guitar.wav Tests/Compressed/guitar.wav.flak
+	# @echo "\nGenerating hex dump files..."
+	# @xxd Tests/Files/guitar.wav > Tests/Files/guitar.wav.trash
+	# @xxd Tests/Decompressed/guitar.wav > Tests/Decompressed/guitar.wav.trash
+	# @echo "Checking that guitar files are identical..."
+	# @diff Tests/Files/guitar.wav.trash Tests/Decompressed/guitar.wav.trash
+	# @rm Tests/Files/guitar.wav.trash Tests/Decompressed/guitar.wav.trash
+
 runSpeech: flak
 	@echo "Building speech test..."
 	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I RICE -I FLAK
 	@echo "Running speech test...\n"
 	@./Tests/Execs/flak speech.wav
-	@ ls -l Tests/Files/speech.wav Tests/Compressed/speech.wav.flak
+	@ ls -l Tests/Files/speech.wav Tests/Compressed/speech.wav.flak Tests/Decompressed/speech.wav
 	# @echo "\nGenerating hex dump files..."
 	# @xxd Tests/Files/speech.wav > Tests/Files/speech.wav.trash
 	# @xxd Tests/Decompressed/speech.wav > Tests/Decompressed/speech.wav.trash

@@ -1,1 +1,3 @@
 The rice encoding follows the AUDIOPAK specification.
+
+The rice encoding worked better than the golomb encoding for some reason.

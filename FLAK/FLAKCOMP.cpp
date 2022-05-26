@@ -109,7 +109,15 @@ void FLAKCOMP::processLastSubFrame(string channel, int samples) {
             lowest = errors.sums[i];
         }
     }
-    this->writeSubFrameRaw(channel, index, samples);
+
+    // printf("Lowest error is order: %d with error: %ld\n", index, lowest);
+    int m = static_cast<int>(log2(log(2) * (errors.sums[index]/samples)));
+    // int k = static_cast<int> (ceil(log2(errors.sums[index]/(samples))));
+    this->writeSubFrameHeader(channel, index, m, samples);
+    // Commented out for now
+    this->writeSubFrameResiduals(channel, index, m, samples);
+
+    // this->writeSubFrameRaw(channel, index, samples);
 }
 
 /*  Load frame_sample_size samples in to the buffer,
@@ -192,9 +200,12 @@ void FLAKCOMP::processSubFrame(string channel) {
         }
     }
     // printf("Lowest error is order: %d with error: %ld\n", index, lowest);
-    this->writeSubFrameHeader(channel, index);
+    int m = static_cast<int>(log2(log(2) * (errors.sums[index]/frame_sample_size_const)));
+    // int k = static_cast<int> (ceil(log2(errors.sums[index]/(frame_sample_size_const))));
+    this->writeSubFrameHeader(channel, index, m);
     // Commented out for now
-    this->writeSubFrameResiduals(channel, index);
+    this->writeSubFrameResiduals(channel, index, m);
+    // this->writeSubFrameRaw(channel, index);
 }
 
 /*  Fills out the first three entries in each of the
@@ -251,13 +262,14 @@ void FLAKCOMP::processErrors(string channel) {
     
 }
 
-void FLAKCOMP::writeSubFrameHeader(string channel, int order, int samples) {
+void FLAKCOMP::writeSubFrameHeader(string channel, int order, int m, int samples) {
     unsigned char write_channel = channel == "left" ? 0 : 1;
     // Sets the flag if samples is not the default number
     unsigned char last_subframe_flag = samples == this->frame_sample_size ? 0 : 1; 
     unsigned char write_order = order;
-    unsigned char k = 0;
-    unsigned char write = (last_subframe_flag << 7) | (write_channel << 6) | (write_order << 4) | k;
+    unsigned char write_m = m;
+    unsigned char write = (last_subframe_flag << 7) | (write_channel << 6) | (write_order << 4) | write_m;
+    printf("Header char: %u\t\tFlag: %u\t\tOrder: %u\t\tChannel: %s \t\tM: %d\n", write, last_subframe_flag, write_order, (write_channel == 0 ? "left" : "right"), m);
 
     this->output_file.put(write);
     if (last_subframe_flag) {
@@ -422,7 +434,7 @@ int FLAKCOMP::pushToBuffer(int n) {
     return 0;
 }
 
-void FLAKCOMP::writeSubFrameResiduals(string channel, int order, int samples) {
+void FLAKCOMP::writeSubFrameResiduals(string channel, int order, int k, int samples) {
     int residual_samples = samples - order;
     int16_t error_array[residual_samples];
     switch (order) {
@@ -441,10 +453,15 @@ void FLAKCOMP::writeSubFrameResiduals(string channel, int order, int samples) {
         default:
             break;
     }
+    // printf("Order: %d\n", order);
+    // for (int i = 0; i < 20; i++) {
+    //     printf("Error number %d is: %d\n", i, errors.e1[i]);
+    // }
+    // exit(-1);
     // The log_2 of (log_e(2) multiplied with the expected value of (absolute value of) the error)
-    int m = log2(log(2) * (errors.sums[order]/residual_samples));
-    printf("M is: %d\n", m);
-    this->rice_16.encodeSubFrame(error_array, &this->output_file, residual_samples, m);
+    // int m = log2(log(2) * (errors.sums[order]/residual_samples));
+    // printf("M is: %d\n", m);
+    this->rice_16.encodeSubFrame(error_array, &this->output_file, residual_samples, k);
 }
 
 void FLAKCOMP::writeSignedShortToFile(int16_t number) {

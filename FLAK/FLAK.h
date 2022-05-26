@@ -67,9 +67,9 @@ class FLAKCOMP {
         void processSubFrame(string channel);
         void initialiseErrorArrays(string channel);
         void processErrors(string channel);
-        void writeSubFrameResiduals(string channel, int order, int samples = frame_sample_size_const);
+        void writeSubFrameResiduals(string channel, int order, int m, int samples = frame_sample_size_const);
         int writeSubFrame(string channel);
-        void writeSubFrameHeader(string channel, int order, int samples = frame_sample_size_const);
+        void writeSubFrameHeader(string channel, int order, int m, int samples = frame_sample_size_const);
         void writeSubFrameRaw(string channel, int order, int samples = frame_sample_size_const);
         void writeSignedShortToFile(int16_t number);
         void cleanBuffer();
@@ -89,6 +89,7 @@ class FLAKCOMP {
 
 class FLAKDECOMP {
     private:
+        RICECODER<int16_t> rice_16;
         struct waveHeader wave_header;
         ifstream input_file;
         ofstream output_file;

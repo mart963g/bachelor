@@ -91,7 +91,7 @@ int FLAKDECOMP::fillOutHeader() {
         this->wave_header.DataSize = this->getLongFromLittleEndianBuffer(this->buffer_end-4);
     } else {
         printf("ERROR: Something is wrong with the header data!\n");
-        return -1;
+        // return -1;
     }
     // printf("Audioformat:        %u\n", this->wave_header.AudioFormat);
     // printf("Number of channels: %u\n", this->wave_header.NumChannels);
@@ -125,12 +125,11 @@ int FLAKDECOMP::readSubFrame() {
     unsigned char write_channel = (header_char & 64) >> 6;
     unsigned char last_subframe_flag = (header_char & 128) >> 7;
     unsigned char write_order = (header_char >> 4) & 3;
-    // K is unused for now, and results in a warning if it is not commented out
-    // unsigned char k = header_char & 15;
+    unsigned char m = header_char & 15;
     string channel = write_channel == 0 ? "left" : "right";
     int sample_limit = this->frame_sample_size;
     // if (global_count > 24) {
-        // printf("Header char: %u\t\tFlag: %u\t\tOrder: %u\t\tChannel: %s\n", header_char, last_subframe_flag, write_order, (write_channel == 0 ? "left" : "right"));
+        printf("Header char: %u\t\tFlag: %u\t\tOrder: %u\t\tChannel: %s\t\tM: %u\n", header_char, last_subframe_flag, write_order, (write_channel == 0 ? "left" : "right"), m);
     // }
     if (last_subframe_flag) {
         this->pushToBuffer(2);
@@ -146,15 +145,15 @@ int FLAKDECOMP::readSubFrame() {
     // printf("\tOrder: %u\tK: %u\n", write_order, k);
     int ret = 0;
     // int count = 0;
-    for (int i = 0; i < sample_limit; i++) {
+    for (int i = 0; i < write_order; i++) {
     // for (int i = 0; i < 2; i++) {
         ret = this->pushToBuffer(this->sample_byte_depth);
         if (ret != 0) {
             return (i == 0 ? -1 : i);
         }
-        // This function makes some assumptions, that breaks if the bit depth is not 16
         if (write_channel == 0) {
             if (this->sample_byte_depth > 1) {
+                // This function makes some assumptions, that breaks if the bit depth is not 16
                 read_frame.left[i] = this->getSignedShortFromLittleEndianBuffer(this->buffer_end - this->sample_byte_depth);
             } else {
                 read_frame.left[i] = this->buffer[this->buffer_end-1];
@@ -166,14 +165,13 @@ int FLAKDECOMP::readSubFrame() {
                 read_frame.right[i] = this->buffer[this->buffer_end-1];
             }
         }
-        // This part below is just for testing!!!
-        // if (count < 10 && last_subframe_flag) {
-        //     printf("DECOMP: Sample number %d in last subframe is: %d\n", count, this->getSignedShortFromLittleEndianBuffer(this->buffer_end - 2));
-        //     count++;
-        // }
+    }
+    if (write_channel == 0) {
+        this->rice_16.decodeSubFrame(read_frame.left + write_order, &this->input_file, sample_limit-write_order, m);
+    } else {
+        this->rice_16.decodeSubFrame(read_frame.right + write_order, &this->input_file, sample_limit-write_order, m);
     }
     this->processSubFrame(channel, write_order, sample_limit);
-
     return ret;
 }
 

@@ -1,7 +1,17 @@
-Speech
-Tests/Files/speech.wav                  97530
-Tests/Compressed/speech.wav.flak        83366
+Rice
+    Speech
+    Tests/Files/speech.wav                  97530
+    Tests/Compressed/speech.wav.flak        83366
 
-Forest
-Tests/Files/forest.wav               10437190
-Tests/Compressed/forest.wav.flak     12110765
+    Forest
+    Tests/Files/forest.wav               10437190
+    Tests/Compressed/forest.wav.flak     12110765
+
+Golomb
+    Speech
+    Tests/Files/speech.wav                  97530
+    Tests/Compressed/speech.wav.flak        86504
+
+    Forest
+    Tests/Files/forest.wav               10437190
+    Tests/Compressed/forest.wav.flak     12495590

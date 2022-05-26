@@ -1,0 +1,28 @@
+Helst ikke for meget mere end 20 sider
+Skriftstørrelse 14, 12 kan godt accepteres.
+
+Introduktion 
+
+Oversigt punkt liste med algoritmer og begreber
+aka genemgang af literaturen
+
+Efterfølgende argumenter for valget af implementerede algoritmer
+Motivation for projektet
+
+Grundigere gennemgang af LZ77 og flak/audiopak
+med fokus på detaljer der blev brugt i implementationen
+Gennemgå de væsentligste design beslutninger, og hvorfor de blev taget
+Gennemgå eventuelle ambiguities og afvigelser fra de beskrevne algoritmer
+Gennemgå de store byggeklodser.
+
+/* Code snippets skal have et godt formål, de skal være justified */
+
+Eskperimenter med forskellige filer
+Tjek at kompressionen følger den teoretiske grænse (entropien)
+Hvad vil du gerne vide, fx om der er forskel på de to i køretid eller kompressionsgrad
+
+I stedet for mega mange forskellige filer, prøv filer med forskellige størrelse.
+5 filer per filtype og gerne i forskellig størrelse.
+
+
+Præsentationen skal cirka følge rapportens prioriteter

@@ -19,7 +19,9 @@ class RICECODER {
         int read_bits = 0;
         int32_t getMappedNumber(I number);
         I getRiceEncodedSample(int m);
+        void putRiceEndocedSample(int32_t sample, int m);
         void writeBytePadding();
+        void clearReadBuffer();
         void writeBit(char bit);
         char readBit();
     
