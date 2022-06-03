@@ -57,58 +57,24 @@ I RICECODER<I>::getRiceEncodedSample(int m) {
 
 template<typename I>
 void RICECODER<I>::putRiceEncodedSample(int32_t sample, int m) {
-    /* First the sign bit is written (1 = -, 0 = +).
-           Then the m lowest bits of the positive value of temp are written. The remaining unused bits
-           represent the number N. Then N 0's are written, followed by a 1. */
-
-        // if (m == 5) {
-        //     printf("Reached weird block!\n");
-        //     printf("Bitbuffer before first sample: %u\n", this->write_bitbuffer);
-        //     printf("Sample: %d\n", sample);
-        // }
-        if (sample < 0) {
-            this->writeBit(1);
-            sample = sample*-1;
-            // if (m==5) {
-            //     printf("1");
-            // }
-        } else {
-            this->writeBit(0);
-            // if (m==5) {
-            //     printf("0");
-            // }
-        }
-        // if (m==5) {
-        //     // printf("Sample after possible inversion: %d\n", sample);
-        //     // printf("Written bits after possible inversion: %d\n", this->written_bits);
-        // }
-        for (int i = 0; i < m; i++) {
-            // Write first m bits of sample
-            // if (m==5) {
-            //     printf("%u", (sample & 1));
-            // }
-            this->writeBit(sample & 1);
-            sample = sample >> 1;
-        }
-        // if (m==5) {
-        //     // printf("Sample after m bits printed: %d\n", sample);
-        //     // printf("Written bits after m bits printed: %d\n", this->written_bits);
-        // }
-        for (int i = 0; i < sample; i++) {
-            this->writeBit(0);
-            // if (m==5) {
-            //     printf("0");
-            // }
-        }
-        this->writeBit(1); 
-        //     if (m==5) {
-        //         printf("1\n");
-        //     }
-        // if (m == 5) {
-        //     printf("Write bitbuffer after completion of first sample: %u\n", this->write_bitbuffer);
-        //     printf("Written bits after completion of first sample: %d\n", this->written_bits);
-        //     exit(-1);
-        // }
+    /*  First the sign bit is written (1 = -, 0 = +).
+        Then the m lowest bits of the positive value of temp are written. The remaining unused bits
+        represent the number N. Then N 0's are written, followed by a 1. */
+    if (sample < 0) {
+        this->writeBit(1);
+        sample = sample*-1;
+    } else {
+        this->writeBit(0);
+    }
+    for (int i = 0; i < m; i++) {
+        // Write first m bits of sample
+        this->writeBit(sample & 1);
+        sample = sample >> 1;
+    }
+    for (int i = 0; i < sample; i++) {
+        this->writeBit(0);
+    }
+    this->writeBit(1); 
 }
 
 // Codewise the exact reverse of writeBit

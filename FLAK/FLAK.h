@@ -42,7 +42,7 @@ struct ErrorWrapper {
     I e1[frame_sample_size_const];
     I e2[frame_sample_size_const];
     I e3[frame_sample_size_const];
-    long sums[4];
+    long long sums[4];
 };
 
 class FLAKCOMP {

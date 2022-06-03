@@ -31,22 +31,19 @@ void FLAKDECOMP::initialiseDecompression(string file_name, string destination_fi
     this->input_file.open(file_name, ios::binary);
     this->output_file.open(destination_file, ios::binary);
     this->pushToBuffer(4);
-    if (memcmp(this->buffer.data(), "FLAK", 4)) {
+    if (!memcmp(this->buffer.data(), "FLAK", 4)) {
+        // This push is only kept to not change all the following code.
+        // The FLAK with a big K indicates a WAVE file from the compresser
+        this->pushToBuffer(12);
+        this->decompressWaveFile();
+    }
+    // FLAk with a small k indicates other file.
+    else if (!memcmp(this->buffer.data(), "FLAk", 4)) {
+        this->decompressOtherFile();
+    }
+    else {
         printf("ERROR: This is not a compressed FLAK file!\n");
         return;
-    }
-    this->pushToBuffer(4);
-    char* test = (char*) &this->buffer.data()[4];
-    if (!memcmp(test, "RIFF", 4)) {
-        this->pushToBuffer(8);
-        char* wave = (char*) &this->buffer.data()[12];
-        if (!memcmp(wave, "WAVE", 4)) {
-            this->decompressWaveFile();
-        } else {
-            this->decompressOtherFile();
-        }
-    } else {
-        this->decompressOtherFile();
     }
 }
 
@@ -62,8 +59,7 @@ void FLAKDECOMP::decompressWaveFile() {
 
 void FLAKDECOMP::decompressOtherFile() {
     // printf("This was not a wave file!\n");
-    int computed_samples = this->readFirstFrameNonWaveFile(this->buffer.size());
-    this->writeFrame();
+    int computed_samples = 0;
     while((computed_samples = this->readFrame()) == 0) {
         this->writeFrame();
     }
@@ -129,7 +125,7 @@ int FLAKDECOMP::readSubFrame() {
     string channel = write_channel == 0 ? "left" : "right";
     int sample_limit = this->frame_sample_size;
     // if (global_count > 24) {
-        printf("Header char: %u\t\tFlag: %u\t\tOrder: %u\t\tChannel: %s\t\tM: %u\n", header_char, last_subframe_flag, write_order, (write_channel == 0 ? "left" : "right"), m);
+    // printf("DECOMP Header char: %u\t\tFlag: %u\t\tOrder: %u\t\tChannel: %s\t\tM: %u\n", header_char, last_subframe_flag, write_order, (write_channel == 0 ? "left" : "right"), m);
     // }
     if (last_subframe_flag) {
         this->pushToBuffer(2);
@@ -269,46 +265,52 @@ void FLAKDECOMP::writeFrame() {
     }
 }
 
-int FLAKDECOMP::readFirstFrameNonWaveFile(int buffer_size) {
-    unsigned char header_char = this->buffer[4]; 
-    unsigned char write_channel = (header_char & 64) >> 6;
-    unsigned char last_subframe_flag = (header_char & 128) >> 7;
-    unsigned char write_order = (header_char >> 4) & 3;
+// int FLAKDECOMP::readFirstFrameNonWaveFile(int buffer_size) {
+//     unsigned char header_char = this->buffer[4]; 
+//     unsigned char write_channel = (header_char & 64) >> 6;
+//     unsigned char last_subframe_flag = (header_char & 128) >> 7;
+//     unsigned char write_order = (header_char >> 4) & 3;
+//     unsigned char m = header_char & 15;
 
-    int start = 5;
-    string channel = write_channel == 0 ? "left" : "right";
-    int sample_limit = this->frame_sample_size;
-    // printf("Header char: %u\t\tFlag: %u\n", header_char, last_subframe_flag);
-    if (last_subframe_flag) {
-        start = 7;
-        sample_limit = this->getSignedShortFromLittleEndianBuffer(5);
-        // This is not pretty, but it is the fastest way to make writeFrame correct
-        if (sample_limit != this->frame_sample_size && this->frame_sample_size != frame_sample_size_const) {
-            decompression_different_sample_number_in_channels_flag = 1;
-        }
-        this->frame_sample_size = sample_limit;
-        // printf("Samples in last frame: %d\n", sample_limit);
-    }
+//     // int start = 5;
+//     string channel = write_channel == 0 ? "left" : "right";
+//     int sample_limit = this->frame_sample_size;
+//     printf("DECOMP Non wave Header char: %u\t\tFlag: %u\t\tOrder: %u\t\tChannel: %s\t\tM: %u\n", header_char, last_subframe_flag, write_order, (write_channel == 0 ? "left" : "right"), m);
+//     if (last_subframe_flag) {
+//         // start = 7;
+//         sample_limit = this->getSignedShortFromLittleEndianBuffer(5);
+//         // This is not pretty, but it is the fastest way to make writeFrame correct
+//         if (sample_limit != this->frame_sample_size && this->frame_sample_size != frame_sample_size_const) {
+//             decompression_different_sample_number_in_channels_flag = 1;
+//         }
+//         this->frame_sample_size = sample_limit;
+//         // printf("Samples in last frame: %d\n", sample_limit);
+//     }
 
-    int ret = 0;
-    for (int i = start; i < (sample_limit + start); i++) {
-        // Only adds to the buffer if the current data is not yet read.
-        // This line is the whole reason for the separate function.
-        if (i >= buffer_size) {
-            ret = this->pushToBuffer(this->sample_byte_depth);
-            if (ret != 0) {
-                return (i == 0 ? -1 : i);
-            }
-            // Non wave files are always encoded with mono sound 8-bits for simplicity.
-            read_frame.left[i-start] = this->buffer[this->buffer_end-1];
-        } else {
-            read_frame.left[i-start] = this->buffer[i];
-        }
-    }
-    this->processSubFrame(channel, write_order, sample_limit);
+//     int ret = 0;
+//     for (int i = 0; i < write_order; i++) {
+//         // Only adds to the buffer if the current data is not yet read.
+//         // This line is the whole reason for the separate function.
+//         if (i >= buffer_size) {
+//             ret = this->pushToBuffer(this->sample_byte_depth);
+//             if (ret != 0) {
+//                 return (i == 0 ? -1 : i);
+//             }
+//             // Non wave files are always encoded with mono sound 8-bits for simplicity.
+//             read_frame.left[i-start] = this->buffer[this->buffer_end-1];
+//         } else {
+//             read_frame.left[i-start] = this->buffer[i];
+//         }
+//     }
+//     if (write_channel == 0) {
+//         this->rice_16.decodeSubFrame(read_frame.left + write_order, &this->input_file, sample_limit-write_order, m);
+//     } else {
+//         this->rice_16.decodeSubFrame(read_frame.right + write_order, &this->input_file, sample_limit-write_order, m);
+//     }
+//     this->processSubFrame(channel, write_order, sample_limit);
 
-    return ret;
-}
+//     return ret;
+// }
 
 void FLAKDECOMP::writeSignedShortToFile(int16_t number) {
     unsigned char write = number & 255;

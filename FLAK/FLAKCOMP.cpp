@@ -58,8 +58,9 @@ void FLAKCOMP::compressWaveFile() {
 
 void FLAKCOMP::compressOtherFile() {
     // printf("This is not a wave file!\n");
-    this->output_file.write("FLAK", 4);
+    this->output_file.write("FLAk", 4);
     int computed_samples = this->fillOutFirstFrameNonWave();
+    printf("Computed samples: %d\n", computed_samples);
     if (computed_samples == 0) {
         this->processFrame();
         // int count = 0;
@@ -200,7 +201,7 @@ void FLAKCOMP::processSubFrame(string channel) {
         }
     }
     // printf("Lowest error is order: %d with error: %ld\n", index, lowest);
-    int m = static_cast<int>(log2(log(2) * (errors.sums[index]/frame_sample_size_const)));
+    int m = static_cast<int>(log2(log(2) * (errors.sums[index]/this->frame_sample_size)));
     // int k = static_cast<int> (ceil(log2(errors.sums[index]/(frame_sample_size_const))));
     this->writeSubFrameHeader(channel, index, m);
     // Commented out for now
@@ -269,7 +270,7 @@ void FLAKCOMP::writeSubFrameHeader(string channel, int order, int m, int samples
     unsigned char write_order = order;
     unsigned char write_m = m;
     unsigned char write = (last_subframe_flag << 7) | (write_channel << 6) | (write_order << 4) | write_m;
-    printf("Header char: %u\t\tFlag: %u\t\tOrder: %u\t\tChannel: %s \t\tM: %d\n", write, last_subframe_flag, write_order, (write_channel == 0 ? "left" : "right"), m);
+    // printf("COMP Header char: %u\t\tFlag: %u\t\tOrder: %u\t\tChannel: %s \t\tM: %d\n", write, last_subframe_flag, write_order, (write_channel == 0 ? "left" : "right"), m);
 
     this->output_file.put(write);
     if (last_subframe_flag) {

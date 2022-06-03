@@ -64,7 +64,7 @@ runHello:
 
 flakHello: flak
 	@echo "Building flak test..."
-	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK -I RICE
 	@echo "Running flak Hello.txt test...\n"
 	@./Tests/Execs/flak Hello.txt
 	@echo "Checking that hello files are identical..."
@@ -72,7 +72,7 @@ flakHello: flak
 
 flakShakespeare: flak
 	@echo "Building flak test..."
-	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK -I RICE
 	@echo "Running flak shakespeare.txt test...\n"
 	@./Tests/Execs/flak shakespeare.txt
 	@echo "\nChecking that shakespeare files are identical..."
@@ -80,7 +80,7 @@ flakShakespeare: flak
 
 flakPng: flak
 	@echo "Building flak test..."
-	@$(CC) $(CFLAGS) -o Tests/Execs/flak FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK -I RICE
 	@echo "Running flak PNG test...\n"
 	@./Tests/Execs/flak Tester.png
 	@echo "\nChecking that PNG files are identical..."
@@ -92,25 +92,12 @@ runForest: flak
 	@echo "Running forest test...\n"
 	@./Tests/Execs/flak forest.wav
 	@ ls -l Tests/Files/forest.wav Tests/Compressed/forest.wav.flak
-	# @echo "\nGenerating hex dump files..."
-	# @xxd Tests/Files/forest.wav > Tests/Files/forest.wav.trash
-	# @xxd Tests/Decompressed/forest.wav > Tests/Decompressed/forest.wav.trash
-	# @echo "Checking that forest files are identical..."
-	# @diff Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
-	# @rm Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
-
-runPiano: flak
-	@echo "Building piano test..."
-	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK -I RICE
-	@echo "Running piano test...\n"
-	@./Tests/Execs/flak piano.wav
-	@ ls -l Tests/Files/piano.wav Tests/Compressed/piano.wav.flak
-	# @echo "\nGenerating hex dump files..."
-	# @xxd Tests/Files/piano.wav > Tests/Files/piano.wav.trash
-	# @xxd Tests/Decompressed/piano.wav > Tests/Decompressed/piano.wav.trash
-	# @echo "Checking that piano files are identical..."
-	# @diff Tests/Files/piano.wav.trash Tests/Decompressed/piano.wav.trash
-	# @rm Tests/Files/piano.wav.trash Tests/Decompressed/piano.wav.trash
+	@echo "\nGenerating hex dump files..."
+	@xxd Tests/Files/forest.wav > Tests/Files/forest.wav.trash
+	@xxd Tests/Decompressed/forest.wav > Tests/Decompressed/forest.wav.trash
+	@echo "Checking that forest files are identical..."
+	@diff Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
+	@rm Tests/Files/forest.wav.trash Tests/Decompressed/forest.wav.trash
 
 runGuitar: flak
 	@echo "Building guitar test..."
@@ -118,12 +105,12 @@ runGuitar: flak
 	@echo "Running guitar test...\n"
 	@./Tests/Execs/flak guitar.wav
 	@ ls -l Tests/Files/guitar.wav Tests/Compressed/guitar.wav.flak
-	# @echo "\nGenerating hex dump files..."
-	# @xxd Tests/Files/guitar.wav > Tests/Files/guitar.wav.trash
-	# @xxd Tests/Decompressed/guitar.wav > Tests/Decompressed/guitar.wav.trash
-	# @echo "Checking that guitar files are identical..."
-	# @diff Tests/Files/guitar.wav.trash Tests/Decompressed/guitar.wav.trash
-	# @rm Tests/Files/guitar.wav.trash Tests/Decompressed/guitar.wav.trash
+	@echo "\nGenerating hex dump files..."
+	@xxd Tests/Files/guitar.wav > Tests/Files/guitar.wav.trash
+	@xxd Tests/Decompressed/guitar.wav > Tests/Decompressed/guitar.wav.trash
+	@echo "Checking that guitar files are identical..."
+	@diff Tests/Files/guitar.wav.trash Tests/Decompressed/guitar.wav.trash
+	@rm Tests/Files/guitar.wav.trash Tests/Decompressed/guitar.wav.trash
 
 runSpeech: flak
 	@echo "Building speech test..."
@@ -131,12 +118,12 @@ runSpeech: flak
 	@echo "Running speech test...\n"
 	@./Tests/Execs/flak speech.wav
 	@ ls -l Tests/Files/speech.wav Tests/Compressed/speech.wav.flak Tests/Decompressed/speech.wav
-	# @echo "\nGenerating hex dump files..."
-	# @xxd Tests/Files/speech.wav > Tests/Files/speech.wav.trash
-	# @xxd Tests/Decompressed/speech.wav > Tests/Decompressed/speech.wav.trash
-	# @echo "Checking that speech files are identical..."
-	# @diff Tests/Files/speech.wav.trash Tests/Decompressed/speech.wav.trash
-	# @rm Tests/Files/speech.wav.trash Tests/Decompressed/speech.wav.trash
+	@echo "\nGenerating hex dump files..."
+	@xxd Tests/Files/speech.wav > Tests/Files/speech.wav.trash
+	@xxd Tests/Decompressed/speech.wav > Tests/Decompressed/speech.wav.trash
+	@echo "Checking that speech files are identical..."
+	@diff Tests/Files/speech.wav.trash Tests/Decompressed/speech.wav.trash
+	@rm Tests/Files/speech.wav.trash Tests/Decompressed/speech.wav.trash
 	
 	
 #@echo "Sizes:"
