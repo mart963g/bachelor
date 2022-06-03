@@ -15,8 +15,8 @@ struct token {
 
 struct nonMatchToken {
     unsigned char non_match : 1;
-    unsigned char offset : 7;
-    unsigned char length;
+    unsigned char _ : 7;
+    unsigned char raw_byte;
 }; 
 
 /*  The matchToken is the one that there could potentially be several

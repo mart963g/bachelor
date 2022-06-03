@@ -156,8 +156,8 @@ struct matchToken LZ77COMP::getMatchToken(struct token token) {
 struct nonMatchToken LZ77COMP::getNonMatchToken(struct token token) {
     struct nonMatchToken writeToken;
     writeToken.non_match = 1;
-    writeToken.offset = token.offset;
-    writeToken.length = token.length;
+    writeToken._ = token.offset;
+    writeToken.raw_byte = token.length;
 
     return writeToken;
 }

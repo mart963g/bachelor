@@ -45,7 +45,7 @@ int LZ77DECOMP::readTokenFromInput(struct token &token) {
     struct nonMatchToken nonMatchToken = *reinterpret_cast<struct nonMatchToken*>(readBuffer);
     struct matchToken matchToken = *reinterpret_cast<struct matchToken*>(readBuffer);
     // Check if the bytes represent a valid non match token, otherwise it must be a match token
-    if (nonMatchToken.non_match == 1 && nonMatchToken.offset == 0) {
+    if (nonMatchToken.non_match == 1 && nonMatchToken._ == 0) {
         token = this->getTokenFromNonMatchToken(nonMatchToken);
         // cout << "Found non match token with data: " << token.length << "\n";
     } else {
@@ -60,7 +60,7 @@ int LZ77DECOMP::readTokenFromInput(struct token &token) {
 struct token LZ77DECOMP::getTokenFromNonMatchToken(struct nonMatchToken nonMatchToken) {
     struct token token;
     token.offset = 0;
-    token.length = nonMatchToken.length;
+    token.length = nonMatchToken.raw_byte;
 
     return token;
 }
