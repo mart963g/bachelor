@@ -6,8 +6,8 @@ From here the decompresser will read stuff like sample bit depth, number of chan
 Possibly the number of zero value samples appended to the end of the last frame. 
 
 METADATA FORMAT:
-<4> The string "FLAK" ascii encoded
-<44> The original uncompressed WAV header
+<4> Either the string "FLAK" or "FLAk". If "FLAK", the compressed file was a WAVE file. If "FLAk", it was not.
+<44 || 0> The original uncompressed WAVE header. If not a WAVE file, then nothing.
 
 Frame:
 A frame has a header. The frame header needs to show which channel it is displaying data for.

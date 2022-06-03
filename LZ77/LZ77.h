@@ -12,7 +12,6 @@ struct token {
     unsigned char length;
 };
 
-
 struct nonMatchToken {
     unsigned char non_match : 1;
     unsigned char _ : 7;
@@ -23,6 +22,7 @@ struct nonMatchToken {
     similar types of, with different bit settings */
 struct matchToken {
     unsigned char non_match : 1;
+    // This needs to be uint16_t for some reason it does not work with unsigned int
     uint16_t offset : 10;
     unsigned char length : 5;
 };
