@@ -1,11 +1,12 @@
 #include "RICE.h"
+#include <cstring>
 int read_bytes_count = 0;
 int written_bytes_count = 0;
 int read_blocks_count = 0;
+int written_blocks_count = 0;
 
 template<typename I>
-void RICECODER<I>::encodeSubFrame(I samples_array[], ofstream* output_file, int num_of_samples, int m) {
-    this->output_file = output_file;
+void RICECODER<I>::encodeSubFrame(I samples_array[], int num_of_samples, int m) {
     // printf("Written bytes count at frame is: %d\n", written_bytes_count);
     // printf("First sample: %d; Second sample: %d; Second last sample: %d; Last sample: %d\n", samples_array[0], samples_array[1], samples_array[num_of_samples-2], samples_array[num_of_samples-1]);
     for (int i = 0; i < num_of_samples; i++) {
@@ -16,24 +17,72 @@ void RICECODER<I>::encodeSubFrame(I samples_array[], ofstream* output_file, int 
         // }
         this->putRiceEncodedSample(temp, m);
     }
+    written_blocks_count++;
     this->writeBytePadding();
-    // char space[] = {-1, -1, -1, -1, -1, -1, -1, -1};
-    // this->output_file->write(space, 8);
+    char space2[] = {-1, -1, -1, -1, -1, -1, -1, -1};
+    this->output_file->write(space2, 8);
+    // if (written_blocks_count == 3123) {
+    //     char space2[] = {-86, -86, -86, -86, -86, -86, -86, -86};
+    //     this->output_file->write(space2, 8);
+    //     printf("Num of samples: %d, M: %d\n", num_of_samples, m);
+    // //     exit(10);
+    // }
 }
 
 template<typename I>
-void RICECODER<I>::decodeSubFrame(I samples_array[], ifstream* input_file, int num_of_samples, int m) {
-    this->input_file = input_file;
-    // printf("Read bytes count at frame is: %d\n", read_bytes_count);
+void RICECODER<I>::decodeSubFrame(I samples_array[], int num_of_samples, int m) {
+    // if (num_of_samples > 600 || num_of_samples < 0) {
+    //     printf("RICE decoder subframe with m: %d\n", m);
+    //     printf("Read bytes count at frame is: %d\n", read_bytes_count);
+    //     printf("Read blocks count at frame is: %d\n", read_blocks_count);
+    //     printf("Num of samples: %d\n", num_of_samples);
+    //     printf("Bytes after wrongly read header: ");
+    //     // char test[20];
+    //     for(int i = 0; i < 20; i++) {
+    //         // test[i] = this->input_file->get();
+    //         printf("%02x ", this->input_file->get());
+    //     }
+    //     printf("\n");
+    //     // printf("Test: %s\n", test);
+    //     exit(-1);
+    // }
     for (int i = 0; i < num_of_samples; i++) {
         samples_array[i] = this->getRiceEncodedSample(m);
         // if (i < 20) {
         //     printf("Sample %d is: %d\n", i, samples_array[i]);
         // }
     }
+    read_blocks_count++;
     // printf("First sample: %d; Second sample: %d; Second last sample: %d; Last sample: %d\n", samples_array[0], samples_array[1], samples_array[num_of_samples-2], samples_array[num_of_samples-1]);
-    // char space[8];
-    // this->input_file->read(space, 8);
+    char space[8];
+    this->input_file->read(space, 8);
+    // if (read_blocks_count == 3123) {
+    //     printf("Samples: %d\n", num_of_samples);
+    // }
+    
+    // if (read_blocks_count == 3123) {
+    //     this->input_file->read(space, 8);
+    // }
+    // if (read_blocks_count > 3123) {
+    //     printf("Running on fumes!\n");
+    //     printf("Num of samples: %d, M: %d\n", num_of_samples, m);
+    // }
+    // char test[] = {-1, -1, -1, -1, -1, -1, -1, -1};
+    // if (memcmp(space, test, 8)) {
+    //     printf("Encountered non header id block, where it should have been. Instead got: \n");
+    //     // printf("%02x ", this->input_file->get());
+    //     for (int i = 0; i < 8; i++) {
+    //         printf("%02x ", space[i]);
+    //     }
+    //     for (int i = 0; i < 12; i++) {
+    //         printf("%02x ", this->input_file->get());
+    //     }
+    //     printf("\n");
+    //     printf("Read bytes count at frame is: %d\n", read_bytes_count);
+    //     printf("Read blocks count at frame is: %d\n", read_blocks_count);
+    //     exit(1);   
+    // }
+
     this->clearReadBuffer();
     // exit(-1);
 }
@@ -82,7 +131,7 @@ template<typename I>
 char RICECODER<I>::readBit() {
     if (this->read_bits == 0) {
         this->read_bitbuffer = this->input_file->get();
-        // read_bytes_count++;
+        read_bytes_count++;
         this->read_bits = 8;
     }
     this->read_bits--;
@@ -122,6 +171,16 @@ void RICECODER<I>::clearReadBuffer() {
     this->read_bits = 0;
 }
 
+template<typename I>
+void RICECODER<I>::setOutputFile(ofstream* output_file) {
+    this->output_file = output_file;
+}
+
+template<typename I>
+void RICECODER<I>::setInputFile(ifstream* input_file) {
+    this->input_file = input_file;
+}
+
 // These two following functions, are only used in the case of Golomb coding,
 // which was found to perform worse than Rice coding.
 template<>
@@ -132,6 +191,7 @@ int32_t RICECODER<int16_t>::getMappedNumber(int16_t number) {
     temp = temp < 0 ? (-2*temp - 1) : (2*temp);
     return temp;
 }
+
 
 template<>
 int32_t RICECODER<unsigned char>::getMappedNumber(unsigned char number) {

@@ -30,6 +30,7 @@ void FLAKDECOMP::decompressFile(string file_name, string destination_file) {
 void FLAKDECOMP::initialiseDecompression(string file_name, string destination_file) {
     this->input_file.open(file_name, ios::binary);
     this->output_file.open(destination_file, ios::binary);
+    this->rice_16.setInputFile(&this->input_file);
     this->pushToBuffer(4);
     if (!memcmp(this->buffer.data(), "FLAK", 4)) {
         // This push is only kept to not change all the following code.
@@ -162,10 +163,16 @@ int FLAKDECOMP::readSubFrame() {
             }
         }
     }
+    if (last_subframe_flag) {
+        printf("Last frame flag: %s\t", (last_subframe_flag == 1 ? "true" : "false"));
+        printf("FLAK decoder subframe with m: %d\n", m);
+        printf("Header char: %u\n", header_char);
+        printf("Sample limit: %u, Write order: %u\n", sample_limit, write_order);
+    }
     if (write_channel == 0) {
-        this->rice_16.decodeSubFrame(read_frame.left + write_order, &this->input_file, sample_limit-write_order, m);
+        this->rice_16.decodeSubFrame(read_frame.left + write_order, sample_limit-write_order, m);
     } else {
-        this->rice_16.decodeSubFrame(read_frame.right + write_order, &this->input_file, sample_limit-write_order, m);
+        this->rice_16.decodeSubFrame(read_frame.right + write_order, sample_limit-write_order, m);
     }
     this->processSubFrame(channel, write_order, sample_limit);
     return ret;
@@ -237,7 +244,6 @@ void FLAKDECOMP::processSubFrame(string channel, int order, int samples) {
             write_frame.right[i] = (int16_t) real_result;
         }
     }
-    
 }
 
 void FLAKDECOMP::writeFrame() {

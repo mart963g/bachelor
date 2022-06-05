@@ -26,8 +26,10 @@ class RICECODER {
         char readBit();
     
     public:
-        void encodeSubFrame(I samples_array[], ofstream* output_file, int num_of_samples, int m);
-        void decodeSubFrame(I samples_array[], ifstream* input_file, int num_of_samples, int m);
+        void encodeSubFrame(I samples_array[], int num_of_samples, int m);
+        void decodeSubFrame(I samples_array[], int num_of_samples, int m);
+        void setOutputFile(ofstream* output_file);
+        void setInputFile(ifstream* input_file);
 };
 
 #endif
