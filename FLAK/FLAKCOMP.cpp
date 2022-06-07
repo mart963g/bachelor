@@ -114,6 +114,9 @@ void FLAKCOMP::processLastSubFrame(string channel, int samples) {
 
     // printf("Lowest error is order: %d with error: %ld\n", index, lowest);
     int m = static_cast<int>(log2(log(2) * (errors.sums[index]/samples)));
+    if (m > this->wave_header.BitsPerSample) {
+        m = this->wave_header.BitsPerSample;
+    }
     // int k = static_cast<int> (ceil(log2(errors.sums[index]/(samples))));
     this->writeSubFrameHeader(channel, index, m, samples);
     // Commented out for now
@@ -203,8 +206,14 @@ void FLAKCOMP::processSubFrame(string channel) {
     }
     // printf("Lowest error is order: %d with error: %ld\n", index, lowest);
     int m = static_cast<int>(log2(log(2) * (errors.sums[index]/this->frame_sample_size)));
+    // This part was breaking the non wave files, since m could be 16 sometimes, 
+    // which would break the reading/writing of residuals since they only had 8 bits.
     if (m > this->wave_header.BitsPerSample) {
         m = this->wave_header.BitsPerSample;
+    }
+    // The header can not store m values > 15.
+    if (m >= 16) {
+        m = 15;
     }
     // int k = static_cast<int> (ceil(log2(errors.sums[index]/(frame_sample_size_const))));
     this->writeSubFrameHeader(channel, index, m);
@@ -274,10 +283,6 @@ void FLAKCOMP::writeSubFrameHeader(string channel, int order, int m, int samples
     unsigned char write_order = order;
     unsigned char write_m = m;
     unsigned char write = (last_subframe_flag << 7) | (write_channel << 6) | (write_order << 4) | write_m;
-    if (last_subframe_flag) {
-        printf("COMP Header char: %u\t\tFlag: %u\t\tOrder: %u\t\tChannel: %s \t\tM: %d\n", write, last_subframe_flag, write_order, (write_channel == 0 ? "left" : "right"), m);
-        printf("COMP: Last subframe with %d samples\n", samples);
-    }
     this->output_file.put(write);
     if (last_subframe_flag) {
         int16_t write_samples = samples;

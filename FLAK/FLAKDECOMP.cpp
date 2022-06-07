@@ -163,12 +163,6 @@ int FLAKDECOMP::readSubFrame() {
             }
         }
     }
-    if (last_subframe_flag) {
-        printf("Last frame flag: %s\t", (last_subframe_flag == 1 ? "true" : "false"));
-        printf("FLAK decoder subframe with m: %d\n", m);
-        printf("Header char: %u\n", header_char);
-        printf("Sample limit: %u, Write order: %u\n", sample_limit, write_order);
-    }
     if (write_channel == 0) {
         this->rice_16.decodeSubFrame(read_frame.left + write_order, sample_limit-write_order, m);
     } else {
