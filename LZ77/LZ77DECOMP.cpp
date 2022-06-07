@@ -22,7 +22,6 @@ void LZ77DECOMP::decompressFile(string file_name) {
     this->decompressAfterInitialisation();
     this->input_file.close();
     this->output_file.close();
-    // this->resetBuffer();
 }
 
 void LZ77DECOMP::decompressFile(string file_name, string destination_file) {
@@ -47,11 +46,8 @@ int LZ77DECOMP::readTokenFromInput(struct token &token) {
     // Check if the bytes represent a valid non match token, otherwise it must be a match token
     if (nonMatchToken.non_match == 1 && nonMatchToken._ == 0) {
         token = this->getTokenFromNonMatchToken(nonMatchToken);
-        // cout << "Found non match token with data: " << token.length << "\n";
     } else {
         token = this->getTokenFromMatchToken(matchToken);
-        // printf("Found match token with offset %u and length %u \n", token.offset, token.length);
-        // cout << "Found match token with offset: " << token.offset << " and length: " << token.length << "\n";
     }
     free(readBuffer);
     return this->input_file.eof() ? 1 : 0;
@@ -100,5 +96,4 @@ void LZ77DECOMP::writeBytesFromToken(struct token token) {
 }
 
 void LZ77DECOMP::cleanBuffer() {
-    // cout << "Clean buffer!\n";
 }

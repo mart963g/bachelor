@@ -43,37 +43,23 @@ void FLAKCOMP::compressWaveFile() {
     this->output_file.write("FLAK", 4);
     this->writeWaveHeader();
     int computed_samples = 0;
-    int count = 0;
     while((computed_samples = this->fillOutFrame()) == 0) {
-        // printf("Filled a whole frame!!\n");
         processFrame();
-        count++;
-        // break;
     }
-    // printf("Computed frames: %d\n", count);
-    // printf("Computed Samples: %d\n", computed_samples);
     if (computed_samples > 0) {
         this->processLastFrame(computed_samples);
     }
 }
 
 void FLAKCOMP::compressOtherFile() {
-    // printf("This is not a wave file!\n");
     this->output_file.write("FLAk", 4);
     int computed_samples = this->fillOutFirstFrameNonWave();
-    // printf("Computed samples: %d\n", computed_samples);
     if (computed_samples == 0) {
         this->processFrame();
-        // int count = 0;
         while((computed_samples = this->fillOutFrame()) == 0) {
-            // printf("Filled a whole frame!!\n");
             this->processFrame();
-            // count++;
-            // break;
         }
     }
-    // printf("Computed frames: %d\n", count);
-    // printf("Computed Samples: %d\n", computed_samples);
     if (computed_samples > 0) {
         this->processLastFrame(computed_samples);
     }
@@ -112,17 +98,13 @@ void FLAKCOMP::processLastSubFrame(string channel, int samples) {
         }
     }
 
-    // printf("Lowest error is order: %d with error: %ld\n", index, lowest);
     int m = static_cast<int>(log2(log(2) * (errors.sums[index]/samples)));
     if (m > this->wave_header.BitsPerSample) {
         m = this->wave_header.BitsPerSample;
     }
     // int k = static_cast<int> (ceil(log2(errors.sums[index]/(samples))));
     this->writeSubFrameHeader(channel, index, m, samples);
-    // Commented out for now
     this->writeSubFrameResiduals(channel, index, m, samples);
-
-    // this->writeSubFrameRaw(channel, index, samples);
 }
 
 /*  Load frame_sample_size samples in to the buffer,
@@ -130,7 +112,6 @@ void FLAKCOMP::processLastSubFrame(string channel, int samples) {
 int FLAKCOMP::fillOutFrame() {
     int ret;
     for (int i = 0; i < this->frame_sample_size; i++) {
-    // for (int i = 0; i < 2; i++) {
         ret = this->pushToBuffer(this->sample_byte_depth);
         if (ret != 0) {
             return (i == 0 ? -1 : i);
@@ -146,8 +127,6 @@ int FLAKCOMP::fillOutFrame() {
             if (ret != 0) {
                 // Sets the flag, to signal that there were more samples in the first channel than in the second
                 compression_different_sample_number_in_channels_flag = 1;
-                // printf("Different sample number in channels detected!\n");
-                // printf("Last sample has value: %d\n", frame.left[i]);
                 return (i == 0 ? -2 : i);
             }
             if (this->sample_byte_depth > 1) {
@@ -192,10 +171,6 @@ void FLAKCOMP::processFrame() {
 void FLAKCOMP::processSubFrame(string channel) {
     this->initialiseErrorArrays(channel);
     this->processErrors(channel);
-    // printf("E0 error sum: %ld\n", errors.sums[0]);
-    // printf("E1 error sum: %ld\n", errors.sums[1]);
-    // printf("E2 error sum: %ld\n", errors.sums[2]);
-    // printf("E3 error sum: %ld\n", errors.sums[3]);
     long lowest = errors.sums[0];
     int index = 0;
     for (int i = 1; i < 4; i++) {
@@ -204,7 +179,6 @@ void FLAKCOMP::processSubFrame(string channel) {
             lowest = errors.sums[i];
         }
     }
-    // printf("Lowest error is order: %d with error: %ld\n", index, lowest);
     int m = static_cast<int>(log2(log(2) * (errors.sums[index]/this->frame_sample_size)));
     // This part was breaking the non wave files, since m could be 16 sometimes, 
     // which would break the reading/writing of residuals since they only had 8 bits.
@@ -217,15 +191,12 @@ void FLAKCOMP::processSubFrame(string channel) {
     }
     // int k = static_cast<int> (ceil(log2(errors.sums[index]/(frame_sample_size_const))));
     this->writeSubFrameHeader(channel, index, m);
-    // Commented out for now
     this->writeSubFrameResiduals(channel, index, m);
-    // this->writeSubFrameRaw(channel, index);
 }
 
 /*  Fills out the first three entries in each of the
     error arrays, since these are special cases */
 void FLAKCOMP::initialiseErrorArrays(string channel) {
-    // cout << "Initialising on channel " + channel + "\n";
     if (channel == "left") {
         for(int i = 0; i < 3; i++) {
             errors.e0[i] = errors.e1[i] = errors.e2[i] = errors.e3[i] = frame.left[i];
@@ -312,36 +283,24 @@ void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
     unsigned char write_order = order;
     unsigned char k = 0;
     unsigned char write = (last_subframe_flag << 7) | (write_channel << 6) | (write_order << 4) | k;
-    // printf("Header char: %u\n", write);
     this->output_file.put(write);
     if (last_subframe_flag) {
         int16_t write_samples = samples;
         this->writeSignedShortToFile(write_samples);
-        // printf("Order: %d\n", order);
     }
     for (int i = 0; i < order; i++) {
         if (channel == "left") {
-            // printf("Error: %d\n", frame.left[i]);
             if (this->sample_byte_depth > 1) {
                 this->writeSignedShortToFile(frame.left[i]);
             } else {
                 this->output_file.put((char) frame.left[i]);
             }
-            // if (i < 20 && this->buffer.size() < 1000) {
-            //     printf("COMP: Sample number %d in last subframe is: %d\n", i, frame.left[i]);
-            //     printf("COMP: Real value is: %d\n", frame.left[i]);
-            // }
         } else if (channel == "right"){
-            // printf("Error: %d\n", frame.right[i]);
             if (this->sample_byte_depth > 1) {
                 this->writeSignedShortToFile(frame.right[i]);
             } else {
                 this->output_file.put((char) frame.right[i]);
             }
-            // if (last_subframe_flag) {
-                // printf("COMP: Sample number %d in last subframe is: %d\n", i, frame.right[i]);
-                // printf("COMP: Real value is: %d\n", frame.right[i]);
-            // }
         }
     }
     // This doubled array is to avoid typing the whole class,
@@ -364,16 +323,11 @@ void FLAKCOMP::writeSubFrameRaw(string channel, int order, int samples) {
             break;
     }
     for (int i = order; i < samples; i++) {
-        // printf("Error: %d\n", error_array[i]);
         if (this->sample_byte_depth > 1) {
             this->writeSignedShortToFile(error_array[i]);
         } else {
             this->output_file.put((char) error_array[i]);
         }
-        // if (i < 20 && this->buffer.size() < 1000) {
-        //     printf("COMP: Sample number %d in last subframe is: %d\n", i, error_array[i]);
-        //     printf("COMP: Real value is: %d\n", (channel == "left" ? frame.left[i] : frame.right[i]));
-        // }
     }
     
 }
@@ -405,12 +359,7 @@ int FLAKCOMP::fillOutHeader() {
     } else {
         printf("The data section is further away than normally!\n");
     }
-    // printf("Audioformat:        %u\n", this->wave_header.AudioFormat);
-    // printf("Number of channels: %u\n", this->wave_header.NumChannels);
-    // printf("Sample rate:        %u\n", this->wave_header.SampleRate);
-    // printf("Byterate:           %u\n", this->wave_header.ByteRate);
-    // printf("Block align:        %u\n", this->wave_header.BlockAlign);
-    // printf("Bits per sample:    %u\n", this->wave_header.BitsPerSample);
+
     return (int) this->input_file.eof(); 
 }
 
@@ -435,7 +384,6 @@ int FLAKCOMP::pushToBuffer(int n) {
         // This is to detect EOF
         unsigned char temp = this->input_file.get();
         if ( this->input_file.eof()) {
-            // cout << "Reached end of file with i = " << i << "\n";
             // Ensures we never return 0 on EOF
             return i == 0 ? -1 : i;
         }
@@ -464,23 +412,14 @@ void FLAKCOMP::writeSubFrameResiduals(string channel, int order, int k, int samp
         default:
             break;
     }
-    // printf("Order: %d\n", order);
-    // for (int i = 0; i < 20; i++) {
-    //     printf("Error number %d is: %d\n", i, errors.e1[i]);
-    // }
-    // exit(-1);
-    // The log_2 of (log_e(2) multiplied with the expected value of (absolute value of) the error)
-    // int m = log2(log(2) * (errors.sums[order]/residual_samples));
-    // printf("M is: %d\n", m);
+
     this->rice_16.encodeSubFrame(error_array, residual_samples, k);
 }
 
 void FLAKCOMP::writeSignedShortToFile(int16_t number) {
     unsigned char write = number & 255;
-    // printf("First char: %u\n", write);
     this->output_file.put(write);
     write = (number >> 8) & 255;
-    // printf("Second char: %u\n", write);
     this->output_file.put(write);
 }
 
