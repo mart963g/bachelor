@@ -3,5 +3,5 @@
 !*.*
 *.o
 *.lzip
-Tests/Decompressed/*
-Tests/Compressed/*
+Tests/Decompressed/*/*
+Tests/Compressed/*/*

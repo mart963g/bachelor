@@ -1,9 +1,9 @@
 CC = g++
 CFLAGS = -Wall -g -ggdb
 EXECS = Tests/Execs/run Tests/Execs/flak
-TESTS = Hello.txt shakespeare.txt Tester.png speech.wav forest.wav guitar.wav
+TESTS = Hello.txt shakespeare.txt Tester.png speech.wav forest.wav guitar.wav piano.wav mePlaying.wav
 TEXT_FILES = Hello.txt shakespeare.txt
-NON_TEXT_FILES = Tester.png speech.wav forest.wav guitar.wav
+NON_TEXT_FILES = Tester.png speech.wav forest.wav guitar.wav piano.wav mePlaying.wav
 DIFF_TEXT = Tests/Files/$(file).trash Tests/Decompressed/$(file).trash
 
 all: clean lz77 flak tests runLZ77 diff cleanFiles runFlak secondDiff
@@ -112,6 +112,32 @@ runGuitar: flak
 	@diff Tests/Files/guitar.wav.trash Tests/Decompressed/guitar.wav.trash
 	@rm Tests/Files/guitar.wav.trash Tests/Decompressed/guitar.wav.trash
 
+runPiano: flak
+	@echo "Building piano test..."
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK -I RICE
+	@echo "Running piano test...\n"
+	@./Tests/Execs/flak piano.wav
+	@ ls -l Tests/Files/piano.wav Tests/Compressed/piano.wav.flak
+	@echo "\nGenerating hex dump files..."
+	@xxd Tests/Files/piano.wav > Tests/Files/piano.wav.trash
+	@xxd Tests/Decompressed/piano.wav > Tests/Decompressed/piano.wav.trash
+	@echo "Checking that piano files are identical..."
+	@diff Tests/Files/piano.wav.trash Tests/Decompressed/piano.wav.trash
+	@rm Tests/Files/piano.wav.trash Tests/Decompressed/piano.wav.trash
+
+runMePlaying: flak
+	@echo "Building mePlaying test..."
+	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I FLAK -I RICE
+	@echo "Running mePlaying test...\n"
+	@./Tests/Execs/flak mePlaying.wav
+	@ ls -l Tests/Files/mePlaying.wav Tests/Compressed/mePlaying.wav.flak
+	@echo "\nGenerating hex dump files..."
+	@xxd Tests/Files/mePlaying.wav > Tests/Files/mePlaying.wav.trash
+	@xxd Tests/Decompressed/mePlaying.wav > Tests/Decompressed/mePlaying.wav.trash
+	@echo "Checking that mePlaying files are identical..."
+	@diff Tests/Files/mePlaying.wav.trash Tests/Decompressed/mePlaying.wav.trash
+	@rm Tests/Files/mePlaying.wav.trash Tests/Decompressed/mePlaying.wav.trash
+
 runSpeech: flak
 	@echo "Building speech test..."
 	@$(CC) $(CFLAGS) -o Tests/Execs/flak RICE/RICECODER.o FLAK/FLAKCOMP.o FLAK/FLAKDECOMP.o Tests/Execs/flak.cpp -I RICE -I FLAK
@@ -157,7 +183,7 @@ sizes:
 
 clean:
 	@echo "Cleaning..."
-	@rm -f *.o */*.o */*/*.lzip */*.lzip */*/*.flak */*.flak Tests/Decompressed/* Tests/Compressed/* */*/*.trash $(EXECS) 
+	@rm -f *.o */*.o */*/*.lzip */*.lzip */*/*.flak */*.flak Tests/Decompressed/*/* Tests/Compressed/*/* */*/*.trash $(EXECS) 
 
 cleanFiles:
 	@echo "Cleaning compressed files..."

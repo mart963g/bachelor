@@ -102,6 +102,10 @@ void FLAKCOMP::processLastSubFrame(string channel, int samples) {
     if (m > this->wave_header.BitsPerSample) {
         m = this->wave_header.BitsPerSample;
     }
+    // The header can not store m values > 15.
+    if (m >= 16) {
+        m = 15;
+    }
     // int k = static_cast<int> (ceil(log2(errors.sums[index]/(samples))));
     this->writeSubFrameHeader(channel, index, m, samples);
     this->writeSubFrameResiduals(channel, index, m, samples);
